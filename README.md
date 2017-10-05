@@ -6,9 +6,11 @@ Applying CP to Intent-Based Management and Orchestration
 
 ## launching scripts
 
+```
 netprog$: mzn2fzn -I mznlib vnf.mzn -o xxx.fzn
-netprog$: ./fzn_chuffed.dms xxx.fzn
 
+netprog$: ./fzn_chuffed.dms xxx.fzn
+```
 
 ## Tech References
 
