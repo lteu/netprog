@@ -16,3 +16,5 @@ minizinc-2.1.2/bin/mzn2fzn -I solver-chuffed/mznlib vnf.mzn -o xxx.fzn
 
 netprog$: mzn2fzn -I mznlib vnf.mzn -o xxx.fzn
 netprog$: ./fzn_chuffed.dms xxx.fzn
+
+mzn2fzn -I mznlib hakank.mzn -o xxx.fzn
