@@ -26,8 +26,10 @@ links = []
 
 start = time.time()
 
-
 os.system("mzn2fzn -I mznlib vnf.mzn -o xxx.fzn") # run command
+# os.system("mzn2fzn -I mznlib hvnf.mzn -o xxx.fzn") # run command
+# os.system("mzn2fzn -I mznlib vnf-inefficient.mzn -o xxx.fzn") # run command
+# os.system("mzn2fzn -I mznlib vnf.mzn -o xxx.fzn") # run command
 rlt = os.popen("./fzn_chuffed.dms xxx.fzn").read() # This will run the command and return any output
 
 # os.system("mzn2fzn -I mznlib vnf.mzn data.dzn -o xxx.fzn") # run command
