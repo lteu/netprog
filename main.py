@@ -26,7 +26,8 @@ links = []
 
 start = time.time()
 
-os.system("mzn2fzn -I mznlib vnf.mzn -o xxx.fzn") # run command
+# os.system("mzn2fzn -I mznlib vnf.mzn -o xxx.fzn") # run command
+os.system("mzn2fzn -I mznlib dvnf.mzn test28.dzn -o xxx.fzn") # run command
 # os.system("mzn2fzn -I mznlib hvnf.mzn -o xxx.fzn") # run command
 # os.system("mzn2fzn -I mznlib vnf-inefficient.mzn -o xxx.fzn") # run command
 # os.system("mzn2fzn -I mznlib vnf.mzn -o xxx.fzn") # run command
