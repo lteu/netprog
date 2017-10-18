@@ -1,4 +1,6 @@
 % 
+% tentative routing without domain connection
+%
 % # Intent-based network programming with Minizinc
 % This script, derived from spanning tree model, deals with SDN routing problems.
 % 
@@ -27,38 +29,47 @@ int: n_domains;   % num of domains
 
 array[1..n_vnfs, 1..8] of int: vnfs;                      % vnf nodes
 array[1..n_vnfs, 1..n_vnfs] of 0..M: link_weights;        % distance matrix
+array[1..n_domains, 1..n_domains] of 0..M: domain_link_weights;        % distance matrix
 array[1..n_domains] of 0..1: domain_activated;            % domains where lie the start and target vnf
 array[1..3] of int: params;                               % service parameters
 
 
-array[1..n_domains,1..n_domains] of 0..1: domain_connection;            % domains where lie the start and target vnf
 
-
-array[1..n_vnfs, 1..n_vnfs] of var 0..1: link_selection;  % the resulting connection matrix
-array[1..n_vnfs] of var 0..10: outFlow;                   % out-flow array
-array[1..n_vnfs] of var 0..1: inFlow;                    % in-flow array
+array[1..n_domains, 1..n_domains] of var 0..1: domain_link_selection;  % the resulting connection matrix
+array[1..n_domains] of var 0..10: outFlow;                   % out-flow array
+array[1..n_domains] of var 0..2: inFlow;                     % in-flow array
 
 % objective to minimize
-var int: total_cost = sum(i in 1..n_vnfs, j in 1..n_vnfs where link_weights[i,j] < M) ( link_weights[i,j]* link_selection[i,j] );
-% var int: total_cost = sum(i,j in 1..n_vnfs where domain_connection[vnfs[i,VNF_DOMAIN_KEY],vnfs[j,VNF_DOMAIN_KEY]] == 1 ) ( link_weights[i,j]* link_selection[i,j] );
+var int: total_cost = sum(i in 1..n_domains, j in 1..n_domains where domain_link_weights[i,j] < M) ( domain_link_weights[i,j]* domain_link_selection[i,j] );
 
 % -------------------------------------------------
 %       Intent-based Model Specification
 % -------------------------------------------------
 
-% constraint total_cost < 25;
+
 %
 % Ensure VNF presence
 %
-predicate path_member(array [int] of var int: inFlow, int: aVNF) =
-  exists ( i in index_set(inFlow) ) (inFlow[i]==1 /\ i = aVNF);
+predicate path_member(array [int] of var int: inFlow, int: aDomain) =
+  if aDomain != vnfs[start,VNF_DOMAIN_KEY] then
+  exists ( i in index_set(inFlow) ) (inFlow[i]==2 /\ i = aDomain)
+  else
+    true
+  endif;
+
 
 %
 % DPI
 %
 predicate enable_dpi(array[int] of var int: inFlow) =
-  forall(j in 1..n_vnfs where domain_activated[vnfs[j,VNF_DOMAIN_KEY]] = 1 /\ vnfs[j,VNF_DPI_KEY] = 1)(
-    path_member(inFlow,j)
+  forall(j in 1..n_domains where domain_activated[j] = 1)(
+    if exists (i in 1..n_vnfs where vnfs[i,VNF_DOMAIN_KEY] = j)
+              (vnfs[i,VNF_DPI_KEY] == 1)
+    then              
+              path_member(inFlow,j)
+    else 
+        true
+    endif
   );
 
 %
@@ -86,127 +97,94 @@ predicate enable_wana(array[int] of var int: inFlow) =
     )
 ;
 
-%
-% test if a vnf is relevant vnf
-%
-test if_relevent_vnf(1..n_vnfs: aVNF) =
-  if vnfs[aVNF,VNF_DPI_KEY] == 1 \/ vnfs[aVNF,VNF_WANA_KEY] == 1 \/ aVNF = target
-  then
-    true
-  else 
-    false
-  endif;
-
 
 % -------------------------------------------------
 %       Core - Graph Shortest Path Problem
 % -------------------------------------------------
 
-
-
 % no selection in inactive domain
 constraint 
-  forall(i,j in 1..n_vnfs where i < j) (
-    if domain_activated[ vnfs[i,VNF_DOMAIN_KEY] ] == 0 then
-        link_selection[i,j] = 0 /\ link_selection[j,i] = 0
+  forall(i,j in 1..n_domains where i < j) (
+    if domain_activated[ i ] == 0 then
+        domain_link_selection[i,j] = 0 /\ domain_link_selection[j,i] = 0
      else 
         true
      endif
   );
 
-% no selection in non-adijacent domain
-constraint 
-  forall(i,j in 1..n_vnfs) (
-    if domain_connection[vnfs[i,VNF_DOMAIN_KEY],vnfs[j,VNF_DOMAIN_KEY] ] == 0 then
-        link_selection[i,j] = 0
-     else 
-        true
-     endif
-  );
-
-% domain connection only one link
-constraint 
-  forall(i,j in 1..n_domains where i != j) (
-    sum(n,m in 1..n_vnfs where vnfs[n,VNF_DOMAIN_KEY] = i /\ vnfs[m,VNF_DOMAIN_KEY] = j) (link_selection[n,m])
-    <=
-    domain_connection[i,j]
-  );
-
-% domain self connection only necessary vnf
-constraint 
-  forall(n,m in 1..n_vnfs where m != n /\ vnfs[n,VNF_DOMAIN_KEY] ==  vnfs[m,VNF_DOMAIN_KEY ]) (
-    if not if_relevent_vnf(m) /\ m != target then
-      link_selection[n,m] = 0 
-    else
-      true
-    endif
-  );
 
 predicate start_target_properties(array[int] of var int: inFlow, array[int] of var int: outFlow) =
-  inFlow[start] = 0 /\ outFlow[start] > 0
+  inFlow[vnfs[start,VNF_DOMAIN_KEY]] = 1 
+  /\ 
+  outFlow[vnfs[start,VNF_DOMAIN_KEY]] > 0
   /\
-  inFlow[target] > 0 /\ outFlow[target] = 0
+  inFlow[vnfs[target,VNF_DOMAIN_KEY]] = 2 
+  /\ 
+  outFlow[vnfs[target,VNF_DOMAIN_KEY]] = 1
 ;
 
-predicate link_selection_properties(array[int,int] of var int: link_selection) =
+predicate domain_link_selection_properties(array[int,int] of var int: domain_link_selection) =
      % no self loop
-  forall(i in 1..n_vnfs) (
-     link_selection[i,i] = 0
+  forall(i in 1..n_domains) (
+     domain_link_selection[i,i] = 1
   )
   /\ % no neighbour loop
-  forall(i,j in 1..n_vnfs where i < j) (
-     not (link_selection[i,j] == 1 /\ link_selection[j,i] == 1)
+  forall(i,j in 1..n_domains where i < j) (
+     not (domain_link_selection[i,j] == 1 /\ domain_link_selection[j,i] == 1)
   )
-  /\ % no link_selection if no connection (M)
-  forall(i,j in 1..n_vnfs) (
-     if link_weights[i,j] == M then
-        link_selection[i,j] = 0
+  /\ % no domain_link_selection if no connection (M)
+  forall(i,j in 1..n_domains) (
+     if domain_link_weights[i,j] == M then
+        domain_link_selection[i,j] = 0
      else 
         true
      endif
   )
   /\ % assert that all x values is >= 0
-  forall(i in 1..n_vnfs, j in 1..n_vnfs where link_weights[i,j] < M) (
-         link_selection[i,j] >= 0
+  forall(i in 1..n_domains, j in 1..n_domains where domain_link_weights[i,j] < M) (
+         domain_link_selection[i,j] >= 0
   ) 
 ;
 
 predicate flow_control(array[int] of var int: inFlow, array[int] of var int: outFlow) =
     % outflow definition
-  forall(i in 1..n_vnfs) (
-    outFlow[i] = sum(j in 1..n_vnfs where link_weights[i,j] < M) (link_selection[i,j])
+  forall(i in 1..n_domains) (
+    outFlow[i] = sum(j in 1..n_domains where domain_link_weights[i,j] < M) (domain_link_selection[i,j])
   )
   /\ % inflow definition
-  forall(j in 1..n_vnfs) (
-    inFlow[j]  = sum(i in 1..n_vnfs where link_weights[i,j] < M) (link_selection[i,j])
-  )
-  /\ % generic VNF - flow through
-  forall(i in 1..n_vnfs where i != start /\ i != target /\ vnfs[i,VNF_DPI_KEY] != 1 ) (
-    (outFlow[i] > 0 /\ inFlow[i] > 0) \/ (outFlow[i] == 0 /\ inFlow[i] == 0)
+  forall(j in 1..n_domains) (
+    inFlow[j]  = sum(i in 1..n_domains where domain_link_weights[i,j] < M) (domain_link_selection[i,j])
   )
   /\ % DPI - flow terminates
-  forall(i in 1..n_vnfs where vnfs[i,VNF_DPI_KEY] == 1) (outFlow[i] == 0)
+  forall(i in 1..n_domains where i != vnfs[start,VNF_DOMAIN_KEY] /\ i != vnfs[target,VNF_DOMAIN_KEY]) (
+    (outFlow[i] > 1 /\ inFlow[i] > 1) \/ (outFlow[i] == 1 /\ inFlow[i] >= 1)
+  )
+  % /\ % generic VNF - flow through
+  % forall(i in 1..n_vnfs where i != start /\ i != target /\ vnfs[i,VNF_DPI_KEY] != 1 ) (
+  %   (outFlow[i] > 0 /\ inFlow[i] > 0) \/ (outFlow[i] == 0 /\ inFlow[i] == 0)
+  % )
+  % /\ % DPI - flow terminates
+  % forall(i in 1..n_vnfs where vnfs[i,VNF_DPI_KEY] == 1) (outFlow[i] == 0)
 ;
 
 constraint
   start_target_properties(inFlow,outFlow)
   /\
-  link_selection_properties(link_selection)
+  domain_link_selection_properties(domain_link_selection)
   /\
   flow_control(inFlow,outFlow)
-  /\
-  if params[WANA_KEY] == 1 /\ can_wana() then enable_wana(inFlow) else true endif
+  % /\
+  % if params[WANA_KEY] == 1 /\ can_wana() then enable_wana(inFlow) else true endif
   /\
   if params[DPI_KEY] == 1 then enable_dpi(inFlow) else true endif
 ;
 
 % solve minimize total_cost;
 % alternative solve statement
-% solve :: int_search([link_selection[i,j] | i,j in 1..n_vnfs], first_fail, indomain, complete) minimize total_cost;
-solve satisfy;
+solve :: int_search([domain_link_selection[i,j] | i,j in 1..n_domains], first_fail, indomain, complete) minimize total_cost;
 
 
-output[ show(inFlow), show(outFlow), show(link_selection),show(total_cost)];
+output[ show(inFlow), show(outFlow), show(domain_link_selection)];
 
 %
 %  instance dataset

@@ -6,12 +6,12 @@ testFile = "test.dzn"
 
   
 start = 1; 
-target = 10;  
+target = 120;  
 M = 10;    
-n_domains = 8;
+n_domains = 12;
 
-lb_domain_vnfs = 2
-up_domain_vnfs = 5
+lb_domain_vnfs = 20
+up_domain_vnfs = 30
 vnfs = [];
 
 # init vnfs
@@ -25,6 +25,8 @@ for i in xrange(1,n_domains+1):
 n_vnfs = len(vnfs);
 
 assert target < n_vnfs
+assert vnfs[start][7] != vnfs[target][7]
+
 
 # init domain costs
 domain_costs = [[0 for x in range(n_domains)] for y in range(n_domains)] 
