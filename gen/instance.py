@@ -6,12 +6,12 @@ testFile = "test.dzn"
 
   
 start = 1; 
-target = 120;  
+target = 50;  
 M = 10;    
 n_domains = 12;
 
-lb_domain_vnfs = 20
-up_domain_vnfs = 30
+lb_domain_vnfs = 8
+up_domain_vnfs = 15
 vnfs = [];
 
 # init vnfs

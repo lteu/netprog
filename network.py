@@ -37,7 +37,7 @@ def adjListToEdge(link_selection):
 	return links, list(set(nodes))
 
 
-testFile = "result.txt"
+testFile = "rlt.txt"
 
 with open(testFile, 'r') as content_file:
     content = content_file.read()

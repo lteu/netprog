@@ -1,15 +1,12 @@
 command to launch the script
 
+deprecate:
 minizinc-2.1.2/bin/mzn2fzn -I solver-chuffed/mznlib net.mzn -o xxx.fzn
-
-
-minizinc-2.1.2/bin/mzn2fzn -I solver-chuffed/mznlib vnf.mzn -o xxx.fzn
-
-
 solver-chuffed/bin/solve xxx.fzn
 
 
-minizinc-2.1.2/bin/mzn2fzn -I solver-chuffed/mznlib vnf.mzn -o xxx.fzn
+noval
+mzn2fzn -I mznlib model.mzn test137.dzn -o xxx.fzn
 
 
 # Compile (Mac with Minizinc installed )
@@ -18,3 +15,5 @@ netprog$: mzn2fzn -I mznlib vnf.mzn -o xxx.fzn
 netprog$: ./fzn_chuffed.dms xxx.fzn
 
 mzn2fzn -I mznlib hakank.mzn -o xxx.fzn
+
+@

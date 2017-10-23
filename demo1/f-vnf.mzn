@@ -26,7 +26,7 @@ int: M;           % edge cost's upper bound
 int: n_domains;   % num of domains
 
 array[1..n_domains, 1..n_domains] of 0..M: domain_link_weights;        % USELESS
-
+array[1..n_vnfs, 1..n_vnfs] of 0..M: link_weights;        % distance matrix
 array[1..n_vnfs, 1..8] of int: vnfs;                      % vnf nodes
 array[1..n_domains] of 0..1: domain_activated;            % domains where lie the start and target vnf
 array[1..3] of int: params;                               % service parameters
