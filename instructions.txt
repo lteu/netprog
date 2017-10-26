@@ -17,3 +17,8 @@ netprog$: ./fzn_chuffed.dms xxx.fzn
 mzn2fzn -I mznlib hakank.mzn -o xxx.fzn
 
 @
+
+
+######
+
+mzn2fzn -I mznlib f-domain.mzn test23.dzn -o xxx.fzn

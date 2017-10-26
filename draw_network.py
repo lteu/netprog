@@ -54,32 +54,17 @@ for piece in pieces:
 links,nodes = adjListToEdge(link_selection)
 # print links,nodes
 # G=nx.Graph()
+
 G=nx.DiGraph()
 for x in xrange(len(nodes)):
-	G.add_node(nodes[x])
+	G.add_node(int(nodes[x]))
 
 for x in xrange(len(links)):
-	G.add_edge(links[x][0],links[x][1])
-# G.add_node("a")
-# G.add_nodes_from(["b","c"])
-
-# G.add_edge(1,2)
-# edge = ("d", "e")
-# G.add_edge(*edge)
-# edge = ("a", "b")
-# G.add_edge(*edge)
-# G.add_edge(1,3)
-# G[1][3]['color']='blue'
-# # G["d"]['color']='blue'
-# print("Nodes of graph: ")
-# print(G.nodes())
-# print("Edges of graph: ")
-# print(G.edges())
+	G.add_edge(int(links[x][0]),int(links[x][1]))
 
 # color_map = ["blue","blue","blue","blue","green","green","green","green","green"]
 color_map = []
-nx.draw(G,node_color = color_map,with_labels = True)
-# # plt.savefig("simple_path.png") # save as png
+nx.draw(G,node_color = color_map,with_labels = True,arrows=True)
 plt.show() # display
 
 

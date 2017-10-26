@@ -7,3 +7,5 @@ Run with:
 ```
 $: python main.py
 ```
+
+note: to choose the running modality pls comment/uncomment the code in main.py
