@@ -1,3 +1,7 @@
+# vnf link list structure
+# vnfs in the same domain are all interconnected
+
+
 import glob
 import sys
 import random

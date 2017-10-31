@@ -30,20 +30,8 @@ array[1..n_domains] of var 0..n_vnfs: sum_domain_shaper;
 
 
 % -------------------------------------------------
-%       Functiona Chain Model Specification
+%       domain effective VNF counter
 % -------------------------------------------------
-
-
-%   effective VNF counter per domain
-% -------------------------------------------------
-
-constraint
-  forall(i in 1..n_domains) (
-    sum_domain_dpi[i] = sum(j in 1..num_vnf_links 
-      where vnfs[vnf_links[j,2], VNF_DOMAIN_KEY] == i
-      /\ vnfs[vnf_links[j,2], VNF_TYPE] == DPI ) 
-      (link_selection[j])
-  );
 
 constraint
   forall(i in 1..n_domains) (
@@ -53,6 +41,7 @@ constraint
       (link_selection[j])
   );
 
+
 constraint
   forall(i in 1..n_domains) (
     sum_domain_wana[i] = sum(j in 1..num_vnf_links 
@@ -61,31 +50,22 @@ constraint
       (link_selection[j])
   );
 
-
-%   balance
+% -------------------------------------------------
+%       Intent-based Model Specification
 % -------------------------------------------------
 
 
-% DPI sum constraint 
-constraint
- sum(i in 1..n_domains) (sum_domain_dpi[i]) <=  max_dpi ;
 
-
-predicate balance_dpi() =
+predicate enable_shaper() =
   forall(i in 1..n_domains) (
-    sum_domain_dpi[i] <= domain_req_dpi[i]
-    /\
-    sum_domain_dpi[i] >= 0
+    true
+    % sum_domain_shaper[i] == domain_req_shaper[i]
   )
 ;
 
-predicate balance_shaper() =
-  forall(i in 1..n_domains) (
-    sum_domain_shaper[i] == domain_req_shaper[i]
-  )
-;
-
-predicate balance_wana() =
+predicate enable_wana() =
+  % true
+  % sum_domain_wana[1] == 1
   forall(i in 1..n_domains)  (
     if exists (j in 1..n_vnfs where vnfs[j,VNF_DOMAIN_KEY] = i)( vnfs[j,VNF_TYPE] = WANA) 
       /\ domain_activated[i] == 1 then
@@ -96,8 +76,31 @@ predicate balance_wana() =
   )
 ;
 
+constraint 
+  link_selection[1] = 1;
+constraint 
+  link_selection[2] = 1;
+constraint 
+  link_selection[3] = 1;
+constraint 
+  link_selection[4] = 1;
+constraint 
+  link_selection[5] = 1;
+constraint 
+  link_selection[6] = 1;
+constraint 
+  link_selection[7] = 1;
+constraint 
+  link_selection[8] = 1;
+constraint 
+  link_selection[9] = 1;
 
-% strict test if WANA applicable
+
+%   constraint 
+%   link_selection[6] = 1 /\ link_selection[7] = 1;
+%
+% WANA
+%
 test can_wana() =
   if 
   exists (i in 1..n_vnfs % same domain of START
@@ -113,7 +116,10 @@ test can_wana() =
     false
   endif;
 
+
+%
 % test if a vnf is relevant vnf
+%
 test if_relevent_vnf(1..n_vnfs: aVNF) =
   if vnfs[aVNF,VNF_TYPE] == DPI 
   \/ vnfs[aVNF,VNF_TYPE] == WANA 
@@ -131,69 +137,44 @@ test if_relevent_vnf(1..n_vnfs: aVNF) =
 %       Core - Graph Shortest Path Problem
 % -------------------------------------------------
 
-% input check
 constraint assert(vnfs[start,VNF_DOMAIN_KEY] != vnfs[target,VNF_DOMAIN_KEY],"Input Data error: start and target VNFs must be in different domains");
 
-% no link connection in inactive domains
-constraint 
-  forall(i in 1..num_vnf_links) (
-    if domain_activated[ vnfs[vnf_links[i,1],VNF_DOMAIN_KEY] ] == 0 \/ domain_activated[ vnfs[vnf_links[i,2],VNF_DOMAIN_KEY] ] == 0 then
-        link_selection[i] = 0
-     else 
-        true
-     endif
-  );
+% no selection in inactive domain
+% constraint 
+%   forall(i in 1..num_vnf_links) (
+%     if domain_activated[ vnfs[vnf_links[i,1],VNF_DOMAIN_KEY] ] == 0 \/ domain_activated[ vnfs[vnf_links[i,2],VNF_DOMAIN_KEY] ] == 0 then
+%         link_selection[i] = 0
+%      else 
+%         true
+%      endif
+%   );
 
-% only relevant VNFs are connectable in the same domain
-constraint 
-  forall(i in 1..num_vnf_links where vnfs[vnf_links[i,1],VNF_DOMAIN_KEY] ==  vnfs[vnf_links[i,2],VNF_DOMAIN_KEY]) (
-    if not if_relevent_vnf(vnf_links[i,2]) then
-      link_selection[i] = 0 
-    else
-      true
-    endif
-  );
+% % no selection in non-adijacent domain
+% constraint 
+%   forall(i in 1..num_vnf_links where 
+%     domain_link_selection[
+%       vnfs[vnf_links[i,1],VNF_DOMAIN_KEY],
+%       vnfs[vnf_links[i,2],VNF_DOMAIN_KEY] ] == 0) (
 
-% no link connection if no domain connection
-constraint 
-  forall(i in 1..num_vnf_links where 
-    domain_link_selection[
-      vnfs[vnf_links[i,1],VNF_DOMAIN_KEY],
-      vnfs[vnf_links[i,2],VNF_DOMAIN_KEY] ] == 0) (
-    link_selection[i] = 0
-  );
+%     link_selection[i] = 0
+%   );
 
+% % domain self connection only necessary vnf
+% constraint 
+%   forall(i in 1..num_vnf_links where vnfs[vnf_links[i,1],VNF_DOMAIN_KEY] ==  vnfs[vnf_links[i,2],VNF_DOMAIN_KEY]) (
+%     if not if_relevent_vnf(vnf_links[i,2]) then
+%       link_selection[i] = 0 
+%     else
+%       true
+%     endif
+%   );
 
-% channel constraint : must link connection if domain connection exists
-% ------------------------------------------------------------------------
-
-constraint 
-  forall(i,j in 1..n_domains where i != j) (
-    domain_link_selection[i,j] == 1 -> exists (m in 1..num_vnf_links where
-      vnfs[vnf_links[m,1],VNF_DOMAIN_KEY] = i 
-      /\ vnfs[vnf_links[m,2],VNF_DOMAIN_KEY] = j
-      /\ vnfs[vnf_links[m,1],VNF_TYPE] = GATEWAY
-      /\ vnfs[vnf_links[m,2],VNF_TYPE] = GATEWAY)
-    (link_selection[m] = 1 )
-  );
-
-constraint 
-   forall(m in 1..num_vnf_links where 
-    vnfs[vnf_links[m,1],VNF_TYPE] = GATEWAY 
-    /\ vnfs[vnf_links[m,2],VNF_TYPE] = GATEWAY
-    /\ vnfs[vnf_links[m,1],VNF_DOMAIN_KEY] != vnfs[vnf_links[m,2],VNF_DOMAIN_KEY] ) (
-      domain_link_selection[vnfs[vnf_links[m,1],VNF_DOMAIN_KEY],vnfs[vnf_links[m,2],VNF_DOMAIN_KEY]] = 1
-      -> link_selection[m] = 1
-   );
-
-% conservative predicates
-% --------------------------
-
-predicate start_target_properties(array[int] of var int: inFlow, array[int] of var int: outFlow) =
-  inFlow[start] = 0 /\ outFlow[start] > 0
-  /\
-  inFlow[target] > 0 /\ outFlow[target] = 0
-;
+% predicate start_target_properties(array[int] of var int: inFlow, array[int] of var int: outFlow) =
+% % true
+%   inFlow[start] = 0 /\ outFlow[start] > 0
+%   /\
+%   inFlow[target] > 0 /\ outFlow[target] = 0
+% ;
 
 predicate flow_control(array[int] of var int: inFlow, array[int] of var int: outFlow) =
     % outflow definition
@@ -204,34 +185,27 @@ predicate flow_control(array[int] of var int: inFlow, array[int] of var int: out
   forall(i in 1..n_vnfs) (
     inFlow[i] = sum(j in 1..num_vnf_links where vnf_links[j,2] == i) (link_selection[j])
   )
-  /\ % generic VNF - flow through
-  forall(i in 1..n_vnfs where i != start /\ i != target /\ vnfs[i,VNF_TYPE] != DPI /\  vnfs[i,VNF_TYPE] != GATEWAY) (
-    (outFlow[i] > 0 /\ inFlow[i] > 0) \/ (outFlow[i] == 0 /\ inFlow[i] == 0)
-  )
-  /\ % DPI - flow terminates
-  forall(i in 1..n_vnfs where vnfs[i,VNF_TYPE] == DPI) (outFlow[i] == 0)
+  % /\ % generic VNF - flow through
+  % forall(i in 1..n_vnfs where i != start /\ i != target /\ vnfs[i,VNF_TYPE] != DPI /\  vnfs[i,VNF_TYPE] != GATEWAY) (
+  %   (outFlow[i] > 0 /\ inFlow[i] > 0) \/ (outFlow[i] == 0 /\ inFlow[i] == 0)
+  % )
+  % /\ % DPI - flow terminates
+  % forall(i in 1..n_vnfs where vnfs[i,VNF_TYPE] == DPI) (outFlow[i] == 0)
 ;
 
-
-% main
-% --------------------------
-
-
 constraint
-  start_target_properties(inFlow,outFlow)
-  /\
+  % start_target_properties(inFlow,outFlow)
+  % /\
   flow_control(inFlow,outFlow)
   /\
-  if params[WANA_KEY] == 1 /\ can_wana() then balance_wana() else true endif
+  if params[WANA_KEY] == 1 /\ can_wana() then enable_wana() else true endif
   /\
-  if params[DPI_KEY] == 1 then balance_dpi() else true endif
-  /\
-  if params[SHAPER_KEY] == 1 then balance_shaper() else true endif
+  if params[SHAPER_KEY] == 1 then enable_shaper() else true endif
 ;
 
 solve satisfy;
 
 
-output[show(link_selection)];
-output[ show(sum_domain_wana), show(sum_domain_shaper),  show(sum_domain_dpi)];
-% output[ show(inFlow ), show(outFlow)];
+output[ show(link_selection)];
+output[ show(sum_domain_wana), show(sum_domain_shaper)];
+output[ show(inFlow ), show(outFlow)];

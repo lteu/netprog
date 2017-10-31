@@ -1,4 +1,4 @@
-# Used for matrix-based links
+# 
 #
 #
 # ref about color: https://stackoverflow.com/questions/27030473/how-to-set-colors-for-nodes-in-networkx-python
@@ -37,7 +37,7 @@ def adjListToEdge(link_selection):
 	return links, list(set(nodes))
 
 
-testFile = "rlt.txt"
+testFile = "rlt_domain.txt"
 
 with open(testFile, 'r') as content_file:
     content = content_file.read()
@@ -52,7 +52,7 @@ for piece in pieces:
 		link_selection,low,high = getRangeAndArray(piece)
 		
 links,nodes = adjListToEdge(link_selection)
-# print links,nodes
+print links
 # G=nx.Graph()
 
 G=nx.DiGraph()
