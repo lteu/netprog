@@ -53,6 +53,8 @@ vnf_info = []
 vnf_links = []
 low = 0
 hight = 0
+VNF_DOMAIN_KEY = 7
+
 
 color =	{
 		'0': "red",
@@ -61,8 +63,8 @@ color =	{
         '3': "yellow",
         '4': "green"
 }
-
-
+# color_set = ["red","grey","orange","yellow","green","blue","pink","purple"]
+color_set = ["red","grey","orange","green","blue","pink","purple"]
 pieces = content.strip().split(";")      
 for piece in pieces:
 	if 'link_selection' in piece.lower():
@@ -80,7 +82,7 @@ nodes =  list(getVNFNodes(selected_edges))
 
 # # print links,nodes
 
-color_map = []
+
 G=nx.DiGraph()
 for x in xrange(len(nodes)):
 	nd = nodes[x]
@@ -93,20 +95,28 @@ for x in xrange(len(links)):
 	G.add_edge(a,b)
 
 # nodes color
+color_map_node = []
+color_map_edge = []
 if vnf_info:
 	for nd in G:
 		vnf_type = vnf_info[int(nd)-1][1]
 		vnf_color = color[vnf_type]
-		color_map.append(vnf_color)
+		color_map_node.append(vnf_color)
 		print nd, vnf_color, vnf_info[int(nd)-1]
 
-	# for lk in G.edges():
-	# 	print lk, lk[0],lk[1]
+	for lk in G.edges():
+		print lk, lk[0],lk[1]
+		print vnf_info[int(lk[0])-1],vnf_info[int(lk[1])-1]
+		domain1 = vnf_info[int(lk[0])-1][VNF_DOMAIN_KEY]
+		domain2 = vnf_info[int(lk[1])-1][VNF_DOMAIN_KEY]
+		if domain1 == domain2:
+			color_map_edge.append(color_set[int(domain1)%len(color_set)])
+		else:
+			color_map_edge.append("black")
 
-		
-# color_map = ["blue","blue","blue","blue","green","green","green","green","green"]
-# color_map = []
-nx.draw(G,node_color = color_map, edge_color='b', with_labels = True)
+
+# color_map_edge = []
+nx.draw(G,node_color = color_map_node, edge_color=color_map_edge, with_labels = True)
 # # # plt.savefig("simple_path.png") # save as png
 plt.show() # display
 
