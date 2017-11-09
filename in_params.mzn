@@ -27,8 +27,8 @@ int: SHAPER = 3;
 
 
 int: n_vnfs;      % number of nodes in the matrix
-int: start;       % start node
-int: target;      % end node
+int: start_domain;       % start node
+int: target_domain;      % end node
 int: M;           % edge cost's upper bound
 int: n_domains;   % num of domains
 int: num_vnf_links;

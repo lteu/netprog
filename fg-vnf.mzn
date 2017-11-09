@@ -45,7 +45,7 @@ constraint
 
 % test if a vnf is relevant vnf
 test if_relevent_vnf(1..n_vnfs: aVNF) =
-  if vnfs[aVNF,VNF_TYPE] > 0
+  if (vnfs[aVNF,VNF_TYPE] > 0 /\ vnfs[aVNF,VNF_TYPE] < 5 /\ service_request[vnfs[aVNF,VNF_TYPE]] == 1) \/ vnfs[aVNF,VNF_TYPE] > 8
   then
     true
   else 
@@ -90,17 +90,12 @@ predicate distributive_constraint(var int: service_id) =
 %       Core - Graph Shortest Path Problem
 % -------------------------------------------------
 
-% input check
-constraint assert(vnfs[start,VNF_DOMAIN_KEY] != vnfs[target,VNF_DOMAIN_KEY],"Input Data error: start and target VNFs must be in different domains");
-
-% no link connection in inactive domains
+% no link connection in irrelevant domains domains
 constraint 
   forall(i in 1..num_vnf_links) (
-    if domain_activated[ vnfs[vnf_links[i,1],VNF_DOMAIN_KEY] ] == 0 \/ domain_activated[ vnfs[vnf_links[i,2],VNF_DOMAIN_KEY] ] == 0 then
-        link_selection[i] = 0
-     else 
-        true
-     endif
+    (selected_domain[vnfs[vnf_links[i,1],VNF_DOMAIN_KEY]] = 0 /\link_selection[i] = 0)
+     \/
+     selected_domain[vnfs[vnf_links[i,1],VNF_DOMAIN_KEY]] = 1
   );
 
 % only relevant VNFs are connectable in the same domain
@@ -148,12 +143,40 @@ constraint
 % conservative predicates
 % --------------------------
 
+% predicate start_target_properties(array[int] of var int: vnf_inFlow, array[int] of var int: vnf_outFlow) =
+%   forall(idx in 1..n_vnfs where vnfs[idx,VNF_TYPE] == ENDPOINT)(
+%     if vnfs[idx,VNF_DOMAIN_KEY] == start_domain then
+%       vnf_inFlow[idx] = 0 /\ vnf_outFlow[idx] > 0
+%     else 
+%       true
+%     endif
+%   )
+%   /\
+%   forall(idx in 1..n_vnfs where vnfs[idx,VNF_TYPE] == ENDPOINT)(
+%     if vnfs[idx,VNF_DOMAIN_KEY] == target_domain then
+%       vnf_inFlow[idx] > 0 /\ vnf_outFlow[idx] = 0
+%     else 
+%       true
+%     endif
+%   );
 predicate start_target_properties(array[int] of var int: vnf_inFlow, array[int] of var int: vnf_outFlow) =
-  vnf_inFlow[start] = 0 /\ vnf_outFlow[start] > 0
-  /\
-  vnf_inFlow[target] > 0 /\ vnf_outFlow[target] = 0
-;
+  forall(idx in 1..n_vnfs where vnfs[idx,VNF_TYPE] == ENDPOINT)(
+    (vnfs[idx,VNF_DOMAIN_KEY] == start_domain /\ vnf_inFlow[idx] = 0 /\ vnf_outFlow[idx] > 0)
+    \/
+    (vnfs[idx,VNF_DOMAIN_KEY] == target_domain /\  vnf_inFlow[idx] > 0 /\ vnf_outFlow[idx] = 0)
+    \/
+    (vnf_inFlow[idx] = 0 /\ vnf_outFlow[idx] = 0)
+  )
+  ;
+% predicate start_target_properties(array[int] of var int: vnf_inFlow, array[int] of var int: vnf_outFlow) =
 
+%       vnf_inFlow[113] = 0 /\ vnf_outFlow[113] > 0
+% \/
+%       vnf_inFlow[87] > 0 /\ vnf_outFlow[87] = 0
+
+%   ;
+
+      
 predicate flow_control(array[int] of var int: vnf_inFlow, array[int] of var int: vnf_outFlow) =
     % vnf_outFlow definition
   forall(i in 1..n_vnfs) (
@@ -164,7 +187,7 @@ predicate flow_control(array[int] of var int: vnf_inFlow, array[int] of var int:
     vnf_inFlow[i] = sum(j in 1..num_vnf_links where vnf_links[j,2] == i) (link_selection[j])
   )
   /\ % generic VNF - flow through
-  forall(i in 1..n_vnfs where i != start /\ i != target /\ vnfs[i,VNF_TERMINATING] != 1 /\  vnfs[i,VNF_TYPE] != GATEWAY) (
+  forall(i in 1..n_vnfs where vnfs[i,VNF_TYPE] != ENDPOINT /\ vnfs[i,VNF_TERMINATING] != 1) (
     (vnf_outFlow[i] > 0 /\ vnf_inFlow[i] > 0) \/ (vnf_outFlow[i] == 0 /\ vnf_inFlow[i] == 0)
   )
   /\ % DPI - flow terminates

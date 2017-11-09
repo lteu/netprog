@@ -1,5 +1,5 @@
-# vnf link list structure
-# all gateway connection
+# vnf link list
+# full gateway connection
 
 import glob
 import sys
@@ -17,14 +17,14 @@ def createVNFs():
 		# append border node
 		idx = len(vnfs) + 1
 		vnfs.append([idx,BORDER, 0, 0, 0, 0, 1, i])
-
+		vnfs.append([idx+1,ENDPOINT, 0, 0, 0, 0, 1, i])
 	return vnfs
 
 def createDomainInfo():
 	# init active domains
 	active_domains =  random.sample(range(n_domains), n_domains/2)
-	active_domains.append(vnfs[start-1][7]-1)
-	active_domains.append(vnfs[target-1][7]-1)
+	active_domains.append(start_domain-1)
+	active_domains.append(target_domain-1)
 
 	# init domain costs
 	domain_costs = [[0 for x in range(n_domains)] for y in range(n_domains)] 
@@ -38,8 +38,7 @@ def createDomainInfo():
 	return active_domains,domain_costs
 
 def createVNFproperties():
-	vnfs[start-1][VNF_KEY_TYPE] = ENDPOINT
-	vnfs[target-1][VNF_KEY_TYPE] = ENDPOINT
+
 	# --- DPI
 	unassigned_vnf_ids = [tmp[0] for tmp in vnfs if tmp[VNF_KEY_TYPE] == 0]
 	dpi_vnf =  random.sample(unassigned_vnf_ids, len(unassigned_vnf_ids)/5)
@@ -71,22 +70,15 @@ def createVNFproperties():
 			vnfs[x][VNF_KEY_MIRRORED] = 0
 	return vnfs
 
-def createVNFLinks(vnfs,start,target,VNF_KEY_TYPE,BORDER,VNF_KEY_DOMAIN,WANA,SHAPER,DPI):
+def createVNFLinks(vnfs,VNF_KEY_TYPE,BORDER,VNF_KEY_DOMAIN,WANA,SHAPER,DPI):
 		
 	# vnf link creation 1: same domain 
 	# ----------------------------
 	vnf_links = []
 	for i in [idx for idx, vnf in enumerate(vnfs) if vnf[VNF_KEY_TYPE] == BORDER]:
 		for j in [idx for idx, vnf in enumerate(vnfs) if vnf[VNF_KEY_TYPE] != BORDER and  vnf[VNF_KEY_DOMAIN] == vnfs[i][VNF_KEY_DOMAIN] ]:
-			if  vnfs[j][0] == start:
-				vnf_links.append([vnfs[j][0],vnfs[i][0]])
-			elif vnfs[j][0] == target:
-				vnf_links.append([vnfs[i][0],vnfs[j][0]])
-			elif vnfs[j][VNF_KEY_TYPE] == DPI:
-				vnf_links.append([vnfs[i][0],vnfs[j][0]])
-			elif vnfs[j][VNF_KEY_TYPE] == WANA or vnfs[j][VNF_KEY_TYPE] == SHAPER:
-				vnf_links.append([vnfs[i][0],vnfs[j][0]])
-				vnf_links.append([vnfs[j][0],vnfs[i][0]])
+			vnf_links.append([vnfs[i][0],vnfs[j][0]])
+			vnf_links.append([vnfs[j][0],vnfs[i][0]])
 
 
 	# vnf link creation 2: gatway borders vnfs
@@ -123,11 +115,6 @@ ENDPOINT = 10;
 WANA = 2;
 DPI = 1;
 SHAPER = 3;
-
-# VNF start end IDs
-start = 1; 
-target = 50;  
-
 M = 10;   # max domain cost
 n_domains = 15;
 
@@ -137,14 +124,13 @@ up_domain_vnfs = 25
 
 vnfs = [];
 
-
+endpoint_domains = random.sample(range(n_domains), 2)
+start_domain = endpoint_domains[0]
+target_domain = endpoint_domains[1]
 
 # init vnfs
 vnfs = createVNFs()
-
 n_vnfs = len(vnfs)
-assert target-1 < n_vnfs
-assert vnfs[start-1][VNF_KEY_DOMAIN] != vnfs[target-1][VNF_KEY_DOMAIN]
 
 # init domains
 active_domains,domain_costs = createDomainInfo()
@@ -157,11 +143,11 @@ print "\nReport\n=========="
 print "number of PDI", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == DPI)
 print "number of WANA", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA)
 print "number of SHAPER", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == SHAPER)
-print "WANA in start domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == vnfs[start-1][VNF_KEY_DOMAIN])
-print "WANA in target domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == vnfs[target-1][VNF_KEY_DOMAIN])
+print "WANA in start domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == start_domain)
+print "WANA in target domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == target_domain)
 
 # create VNF links
-vnf_links = createVNFLinks(vnfs,start,target,VNF_KEY_TYPE,BORDER,VNF_KEY_DOMAIN,WANA,SHAPER,DPI)
+vnf_links = createVNFLinks(vnfs,VNF_KEY_TYPE,BORDER,VNF_KEY_DOMAIN,WANA,SHAPER,DPI)
 num_vnf_links = len(vnf_links)
 
 # Requests Generation
@@ -216,14 +202,6 @@ for x in xrange(0,len(dis_service_range)):
 	str_dis_range += "|"
 str_dis_range += "]"
 
-# stringfy domain shaper
-# ----------------------------
-# str_domain_shapers = "[";
-# for x in domain_shaper:
-# 	str_domain_shapers += str(x)+","
-# str_domain_shapers = str_domain_shapers[:-1]
-# str_domain_shapers += "]"
-
 
 # stringfy domain link weights
 # ----------------------------
@@ -260,10 +238,9 @@ str_vnf += "]"
 
 
 out = "n_vnfs = "+str(n_vnfs)+";\n"
-out += "start = "+str(start)+";\n"
-out += "target = "+str(target)+";\n"
+out += "start_domain = "+str(start_domain)+";\n"
+out += "target_domain = "+str(target_domain)+";\n"
 out += "M = "+str(M)+";\n"
-# out += "max_dpi = "+str(max_dpi)+";\n"
 out += "acc_request = "+str(str_acc_range)+";\n"
 out += "dis_request = "+str(str_dis_range)+";\n"
 out += "n_domains = "+str(n_domains)+";\n"

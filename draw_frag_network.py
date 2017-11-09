@@ -57,11 +57,11 @@ VNF_DOMAIN_KEY = 7
 
 
 color =	{
-		'0': "red",
-        '1': "grey",
+		'10': "red",
+        '9': "grey",
         '2': "blue",
-        '3': "yellow",
-        '4': "green"
+        '1': "yellow",
+        '3': "green"
 }
 # color_set = ["red","grey","orange","yellow","green","blue","pink","purple"]
 color_set = ["red","grey","orange","green","blue","pink","purple"]
@@ -100,7 +100,9 @@ color_map_edge = []
 if vnf_info:
 	for nd in G:
 		vnf_type = vnf_info[int(nd)-1][1]
+
 		vnf_color = color[vnf_type]
+		# print nd,vnf_type ,vnf_color
 		color_map_node.append(vnf_color)
 		print nd, vnf_color, vnf_info[int(nd)-1]
 

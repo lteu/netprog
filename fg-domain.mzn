@@ -68,6 +68,7 @@ predicate distributive_constraint(var int: service_id) =
 % -------------------------------------------------
 %       Core - Graph Shortest Path Problem
 % -------------------------------------------------
+constraint assert(domain_activated[start_domain] == 1 /\domain_activated[target_domain] == 1 ,"Domain must be actived");
 
 % no selection in inactive domain
 constraint 
@@ -80,13 +81,13 @@ constraint
   );
 
 predicate start_target_properties(array[int] of var int: inFlow, array[int] of var int: outFlow) =
-  inFlow[vnfs[start,VNF_DOMAIN_KEY]] = 1 
+  inFlow[start_domain] = 1 
   /\ 
-  outFlow[vnfs[start,VNF_DOMAIN_KEY]] > 0
+  outFlow[start_domain] > 0
   /\
-  inFlow[vnfs[target,VNF_DOMAIN_KEY]] = 2 
+  inFlow[target_domain] = 2 
   /\ 
-  outFlow[vnfs[target,VNF_DOMAIN_KEY]] = 1
+  outFlow[target_domain] = 1
 ;
 
 predicate domain_link_selection_properties(array[int,int] of var int: domain_link_selection) =
@@ -118,7 +119,7 @@ predicate flow_control(array[int] of var int: inFlow, array[int] of var int: out
     inFlow[j]  = sum(i in 1..n_domains where domain_link_weights[i,j] < M) (domain_link_selection[i,j])
   )
   /\ % generic definition
-  forall(i in 1..n_domains where i != vnfs[start,VNF_DOMAIN_KEY] /\ i != vnfs[target,VNF_DOMAIN_KEY]) (
+  forall(i in 1..n_domains where i != start_domain /\ i != target_domain) (
     (outFlow[i] > 1 /\ inFlow[i] > 1) \/ (outFlow[i] == 1 /\ inFlow[i] >= 1)
   )
 ;
