@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import operator
 
-def getRangeAndArray(raw):
+def parseMZNResult(raw):
 	pieces = raw.strip().split("(")    
 	range1 = pieces[1].split(",")[0]  
 	low  = int(range1.split("..")[0])
@@ -61,14 +61,16 @@ color =	{
         '9': "grey",
         '2': "blue",
         '1': "yellow",
-        '3': "green"
+        '3': "green",
+        '4': "pink",
+        '5': "purple"
 }
 # color_set = ["red","grey","orange","yellow","green","blue","pink","purple"]
 color_set = ["red","grey","orange","green","blue","pink","purple"]
 pieces = content.strip().split(";")      
 for piece in pieces:
 	if 'link_selection' in piece.lower():
-		link_selection,low,high = getRangeAndArray(piece)
+		link_selection,low,high = parseMZNResult(piece)
 	if 'vnf_links' in piece.lower():
 		vnf_links = getVNFlinks(piece)
 	if 'vnfs' in piece.lower():

@@ -23,3 +23,8 @@ mzn2fzn -I mznlib hakank.mzn -o xxx.fzn
 
 mzn2fzn -I mznlib fg-domain.mzn test290.dzn -o xxx.fzn
 mzn2fzn -I mznlib fg-vnf.mzn test290dom.dzn -o xxx.fzn
+
+######
+
+mzn2fzn -I mznlib fg-domain.mzn data/test.dzn -o xxx.fzn
+mzn2fzn -I mznlib fg-vnf.mzn data/test-dom.dzn -o xxx.fzn

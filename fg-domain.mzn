@@ -21,16 +21,26 @@ var int: total_cost = sum(i in 1..n_domains, j in 1..n_domains where domain_link
 
 % selected domain value definition ( to improve )
 constraint 
-  forall(i,j in 2..n_domains where i != j) (
+  forall(i,j in 1..n_domains where i != j /\ i != start_domain /\ j != start_domain) (
     (selected_domain[i] == 1 /\ inFlow[i] > 1) \/ (selected_domain[i] == 0 /\ inFlow[i] == 1)
-  ) /\ selected_domain[1] == 1;
+  ) /\ selected_domain[start_domain] == 1;
 
 % count type services by domain
 constraint 
-  forall(k in 1..n_services)(
-    forall(i in 1..n_domains) (
-      count_serivce[k,i] = sum(j in 1..n_vnfs where vnfs[j,VNF_TYPE] == k /\ vnfs[j,VNF_DOMAIN_KEY] == i) (1)
-    )
+  forall(k in 1..n_services,i in 1..n_domains)(
+    % forall() (
+      count_serivce[k,i] = sum(j in 1..n_vnfs) 
+      (if vnfs[j,VNF_DOMAIN_KEY] == i /\ vnfs[j,VNF_TYPE] == k /\ vnfs[j,VNF_STATE_KEY] == 1 then 1 else 0 endif)
+      % (1)
+    % )
+  );
+
+% ensure src end domain satisfy constraints
+constraint 
+  forall(i in 1..n_services) (
+    count_serivce[i,start_domain] >= src_request[i,1]
+    /\ 
+    count_serivce[i,target_domain] >= end_request[i,1]
   );
 
 % check service distribution
@@ -44,8 +54,9 @@ predicate service_check() =
   )
 ;
 
+
 predicate accumulative_constraint(var int: service_id) =
-  let { var 1..n_vnfs: acc = sum(i in 1..n_domains)(
+  let { var 0..n_vnfs: acc = sum(i in 1..n_domains)(
        selected_domain[i] * count_serivce[service_id,i]  
    ) } in (
     acc >= acc_request[service_id,1]
@@ -53,7 +64,7 @@ predicate accumulative_constraint(var int: service_id) =
 ;
 
 predicate distributive_constraint(var int: service_id) =
-  dis_request[service_id,1] > 0 ->
+  dis_request[service_id,1] > 0 /\ request_bound[service_id] == 0 ->
   forall(i in 1..n_domains)(
       selected_domain[i] == 0
       \/

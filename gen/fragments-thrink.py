@@ -44,27 +44,27 @@ def createVNFproperties():
 	dpi_vnf =  random.sample(unassigned_vnf_ids, len(unassigned_vnf_ids)/5)
 	for x in range(n_vnfs):
 		if vnfs[x][0] in dpi_vnf and vnfs[x][VNF_KEY_TYPE] == 0:
-			vnfs[x][VNF_KEY_TYPE] = DPI
+			vnfs[x][VNF_KEY_TYPE] =  DPI
 			vnfs[x][VNF_KEY_TERMINATING] = 1
 			vnfs[x][VNF_KEY_PATHSENSITIVE] = 0
 			vnfs[x][VNF_KEY_MIRRORED] = 0
 
 	# --- WANA
 	unassigned_vnf_ids = [tmp[0] for tmp in vnfs if tmp[VNF_KEY_TYPE] == 0]
-	selected_vnf =  random.sample(unassigned_vnf_ids, len(unassigned_vnf_ids)/5)
+	selected_vnf =  random.sample(unassigned_vnf_ids, len(unassigned_vnf_ids)/4)
 	for x in range(n_vnfs):
 		if vnfs[x][0] in selected_vnf and vnfs[x][VNF_KEY_TYPE] == 0:
-			vnfs[x][VNF_KEY_TYPE] = WANA
+			vnfs[x][VNF_KEY_TYPE] = WANA if random.randint(0, 1) == 0 else VPN
 			vnfs[x][VNF_KEY_TERMINATING] = 0
 			vnfs[x][VNF_KEY_PATHSENSITIVE] = 0 # or not
 			vnfs[x][VNF_KEY_MIRRORED] = 1
 
 	# --- SHAPER
 	unassigned_vnf_ids = [tmp[0] for tmp in vnfs if tmp[VNF_KEY_TYPE] == 0]
-	selected_vnf =  random.sample(unassigned_vnf_ids, len(unassigned_vnf_ids)/5)
+	selected_vnf =  random.sample(unassigned_vnf_ids, len(unassigned_vnf_ids)/3)
 	for x in range(n_vnfs):
 		if vnfs[x][0] in selected_vnf and vnfs[x][VNF_KEY_TYPE] == 0:
-			vnfs[x][VNF_KEY_TYPE] = SHAPER
+			vnfs[x][VNF_KEY_TYPE] = SHAPER if random.randint(0, 1) == 0 else NAT
 			vnfs[x][VNF_KEY_TERMINATING] = 0
 			vnfs[x][VNF_KEY_PATHSENSITIVE] = 0 # or not
 			vnfs[x][VNF_KEY_MIRRORED] = 0
@@ -115,8 +115,11 @@ ENDPOINT = 10;
 WANA = 2;
 DPI = 1;
 SHAPER = 3;
+VPN = 4;
+NAT = 5;
+
 M = 10;   # max domain cost
-n_domains = 15;
+n_domains = 10;
 
 # vnf range in domain
 lb_domain_vnfs = 8
@@ -143,8 +146,10 @@ print "\nReport\n=========="
 print "number of PDI", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == DPI)
 print "number of WANA", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA)
 print "number of SHAPER", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == SHAPER)
-print "WANA in start domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == start_domain)
-print "WANA in target domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == target_domain)
+print "number of VPN", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == VPN)
+print "number of NAT", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == NAT)
+print "WANA in start domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == start_domain), [vnf[0] for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == start_domain]
+print "WANA in target domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == target_domain), [vnf[0] for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == target_domain]
 
 # create VNF links
 vnf_links = createVNFLinks(vnfs,VNF_KEY_TYPE,BORDER,VNF_KEY_DOMAIN,WANA,SHAPER,DPI)
@@ -154,17 +159,37 @@ num_vnf_links = len(vnf_links)
 # -----------
 total_dpi = len([vnf for vnf in vnfs if vnf[VNF_KEY_TYPE] == DPI])
 dpi_ub = random.randint(2, 2+total_dpi/2)
+
 acc_dpi = [1,dpi_ub]
 dis_dpi = [0,5]
+src_dpi = [0,2]
+end_dpi = [0,2]
 
 acc_wana = [2,n_domains]
 dis_wana = [1,1]
+src_wana = [0,2]
+end_wana = [0,2]
 
 acc_shaper = [1,n_domains]
 dis_shaper = [0,1]
+src_shaper = [0,2]
+end_shaper = [0,2]
 
-acc_service_range = [acc_dpi,acc_wana,acc_shaper]
-dis_service_range = [dis_dpi,dis_wana,dis_shaper]
+acc_nat = [1,n_domains]
+dis_nat = [0,1]
+src_nat = [0,2]
+end_nat = [0,2]
+
+acc_vpn = [1,n_domains]
+dis_vpn = [0,1]
+src_vpn = [0,2]
+end_vpn = [0,2]
+
+acc_service_range = [acc_dpi,acc_wana,acc_shaper,acc_vpn,acc_nat]
+dis_service_range = [dis_dpi,dis_wana,dis_shaper,dis_vpn,dis_nat]
+src_service_range = [src_dpi,src_wana,src_shaper,src_vpn,src_nat]
+end_service_range = [end_dpi,end_wana,end_shaper,end_vpn,end_nat]
+
 # =======================================
 # 			Stringification
 # =======================================
@@ -202,6 +227,25 @@ for x in xrange(0,len(dis_service_range)):
 	str_dis_range += "|"
 str_dis_range += "]"
 
+# stringfy src
+# ----------------------------
+str_src_range = "[|";
+for x in xrange(0,len(src_service_range)):
+	for y in xrange(2):
+		str_src_range += str(acc_service_range[x][y])+","
+	str_src_range = str_src_range[:-1]
+	str_src_range += "|"
+str_src_range += "]"
+
+# stringfy end
+# ----------------------------
+str_end_range = "[|";
+for x in xrange(0,len(end_service_range)):
+	for y in xrange(2):
+		str_end_range += str(acc_service_range[x][y])+","
+	str_end_range = str_end_range[:-1]
+	str_end_range += "|"
+str_end_range += "]"
 
 # stringfy domain link weights
 # ----------------------------
@@ -243,9 +287,12 @@ out += "target_domain = "+str(target_domain)+";\n"
 out += "M = "+str(M)+";\n"
 out += "acc_request = "+str(str_acc_range)+";\n"
 out += "dis_request = "+str(str_dis_range)+";\n"
+out += "src_request = "+str(str_src_range)+";\n"
+out += "end_request = "+str(str_end_range)+";\n"
+out += "request_bound = [0,0,0,0,0];\n"
 out += "n_domains = "+str(n_domains)+";\n"
 out += "domain_link_weights = "+str(str_domain_link_weights)+";\n"
-out += "service_request = [1,1,0];\n"
+out += "service_request = [1,1,1,1,1];\n"
 out += "domain_activated = "+str_active_domains+";\n"
 out += "num_vnf_links = "+str(num_vnf_links)+";\n"
 out += "vnf_links = "+str_vnf_link+";\n"

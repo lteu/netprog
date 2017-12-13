@@ -14,6 +14,16 @@ def getDomainLinkSel(raw):
 	# relevant_str = relevant_str.replace('domain_link_selection', 'domain_connection')
 	return relevant_str
 
+def getVNFLinkSel(raw):
+	pieces = raw.split("----------")  
+	pieces2 = pieces[-2].split(";")  
+	relevant_str = ""
+	for x in xrange(len(pieces2)):
+		if "link_selection" in pieces2[x]:
+			relevant_str = pieces2[x]
+
+	# relevant_str = relevant_str.replace('domain_link_selection', 'domain_connection')
+	return relevant_str
 
 
 def generateOutFile(relevant_str,input_file):
@@ -26,7 +36,10 @@ def generateOutFile(relevant_str,input_file):
 
 	return outfilename
 
-testFile = "data/test264.dzn"
+# testFile = "data/test264.dzn"
+
+testMap = "data-exp/map.dzn"
+testIst = "data-exp/request1.dzn"
 
 startreg = False
 links = []
@@ -63,18 +76,30 @@ start = time.time()
 
 
 # separate execution sequence start
-cmd1 ="mzn2fzn -I mznlib fg-domain.mzn "+testFile+" -o xxx.fzn"
+cmd1 ="mzn2fzn -I mznlib fg-domain.mzn "+testMap+" "+testIst+" -o xxx.fzn"
 os.system(cmd1) # run command
 print cmd1
+
 rlt = os.popen("./fzn_chuffed.dms xxx.fzn").read() # This will run the command and return any output
 
 relevant_str =  getDomainLinkSel(rlt)
-outfilename = generateOutFile(relevant_str,testFile)
 
-cmd2 = "mzn2fzn -I mznlib fg-vnf.mzn "+outfilename+" -o yyy.fzn"
+outfilename = generateOutFile(relevant_str,testMap)
+
+cmd2 = "mzn2fzn -I mznlib fg-vnf.mzn "+outfilename+" "+testIst+" -o yyy.fzn"
 os.system(cmd2) # run command
 print cmd2
+
 rlt2 = os.popen("./fzn_chuffed.dms yyy.fzn").read() # This will run the command and return any output
+
+link_info  = getVNFLinkSel(rlt2)
+
+print link_info
+
+
+# get vnf link list and rewrite vnf links
+# remove used vnf and update graph !
+
 
 print rlt2
 # separate execution sequence end
