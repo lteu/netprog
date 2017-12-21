@@ -38,41 +38,46 @@ constraint
   forall(k in 1..n_services)(
     forall(i in 1..n_domains) (
       count_serivce[k,i] = 
-      sum(j in 1..num_vnf_links where vnfs[vnf_links[j,2], VNF_DOMAIN_KEY] == i /\ vnfs[vnf_links[j,2], VNF_TYPE] == k /\ vnfs[vnf_links[j,2], VNF_STATE_KEY] == 1 ) 
+      sum(j in 1..num_vnf_links 
+        where 
+        vnfs[vnf_links[j,2], VNF_DOMAIN_KEY] == i 
+        /\ vnfs[vnf_links[j,2], VNF_TYPE] == k 
+        /\ vnfs[vnf_links[j,2], VNF_STATE_KEY] == 1 ) 
         (link_selection[j])
     )
   );
 
+
+constraint 
+  forall(i in 1..n_services) (
+    count_serivce[i,start_domain] >= src_request[i,1]
+    /\ 
+    count_serivce[i,start_domain] <= src_request[i,2]
+    /\ 
+    count_serivce[i,target_domain] <= end_request[i,2]
+    /\ 
+    count_serivce[i,target_domain] >= end_request[i,1]
+  );
+
+
 % test if a vnf is relevant vnf
 % 
 test if_relevent_vnf(1..n_vnfs: aVNF) =
-  if (vnfs[aVNF,VNF_TYPE] > 0 /\ vnfs[aVNF,VNF_TYPE] < 6 /\ service_request[vnfs[aVNF,VNF_TYPE]] == 1 )
+  if vnfs[aVNF,VNF_STATE_KEY] == 1
+     /\
+     (
+     (vnfs[aVNF,VNF_TYPE] > 0 /\ vnfs[aVNF,VNF_TYPE] < 6 /\ service_request[vnfs[aVNF,VNF_TYPE]] == 1 )
      % general service
      \/ 
      vnfs[aVNF,VNF_TYPE] > 8 
-     \/
-     vnfs[aVNF,VNF_STATE_KEY] == 1 
+     )
+      
      % endpoint, gateway 
   then
     true
   else 
     false
   endif;
-
-% test if_relevent_vnf(1..n_vnfs: aVNF) =
-%   if (vnfs[aVNF,VNF_TYPE] > 0 /\ vnfs[aVNF,VNF_TYPE] < 5 /\ service_request[vnfs[aVNF,VNF_TYPE]] == 1 /\ request_bound[vnfs[aVNF,VNF_TYPE]] == 0)
-%      % general service
-%      \/ 
-%      (vnfs[aVNF,VNF_TYPE] > 0 /\ vnfs[aVNF,VNF_TYPE] < 5 /\ service_request[vnfs[aVNF,VNF_TYPE]] == 1 /\ request_bound[vnfs[aVNF,VNF_TYPE]] == 1 /\ (vnfs[aVNF,VNF_DOMAIN_KEY] = start_domain \/ vnfs[aVNF,VNF_DOMAIN_KEY] = target_domain) ) 
-%      % endpoint domain service
-%      \/ 
-%      vnfs[aVNF,VNF_TYPE] > 8 
-%      % endpoint, gateway 
-%   then
-%     true
-%   else 
-%     false
-%   endif;
 
 %   service distribution
 % -------------------------------------------------
@@ -96,7 +101,7 @@ predicate accumulative_constraint(var int: service_id) =
   );
 
 predicate distributive_constraint(var int: service_id) =
-  forall(i in 1..n_domains)(
+  forall(i in 1..n_domains where i != start_domain /\ i != target_domain)(
       (
         selected_domain[i] == 0
         /\
@@ -107,23 +112,7 @@ predicate distributive_constraint(var int: service_id) =
         selected_domain[i] == 1
         /\
         dis_request[service_id,1] <= count_serivce[service_id,i] /\ count_serivce[service_id,i] <= dis_request[service_id,2]
-
       )
-      % \/
-      % (
-      %   selected_domain[i] == 1
-      %   /\
-      %   (request_bound[service_id] = 0 \/ (request_bound[service_id] = 1 /\ (i == start_domain \/ i == target_domain) ) )
-      %   /\
-      %   dis_request[service_id,1] <= count_serivce[service_id,i] /\ count_serivce[service_id,i] <= dis_request[service_id,2]
-      % )
-      % \/
-      % (
-      %   selected_domain[i] == 1
-      %   /\
-      %   (request_bound[service_id] = 1 /\ (i != start_domain /\ i != target_domain) )
-      %  )
-
   );
 
 % -------------------------------------------------

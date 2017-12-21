@@ -28,11 +28,8 @@ constraint
 % count type services by domain
 constraint 
   forall(k in 1..n_services,i in 1..n_domains)(
-    % forall() (
       count_serivce[k,i] = sum(j in 1..n_vnfs) 
       (if vnfs[j,VNF_DOMAIN_KEY] == i /\ vnfs[j,VNF_TYPE] == k /\ vnfs[j,VNF_STATE_KEY] == 1 then 1 else 0 endif)
-      % (1)
-    % )
   );
 
 % ensure src end domain satisfy constraints

@@ -118,12 +118,12 @@ SHAPER = 3;
 VPN = 4;
 NAT = 5;
 
-M = 10;   # max domain cost
-n_domains = 10;
+M = 15;   # max domain cost
+n_domains = 15;
 
 # vnf range in domain
-lb_domain_vnfs = 8
-up_domain_vnfs = 25
+lb_domain_vnfs = 40
+up_domain_vnfs = 58
 
 vnfs = [];
 
@@ -199,10 +199,13 @@ end_service_range = [end_dpi,end_wana,end_shaper,end_vpn,end_nat]
 # ----------------------------
 str_active_domains = "[";
 for x in xrange(0,n_domains):
-	if x in active_domains:
-		str_active_domains += "1,"
-	else:
-		str_active_domains += "0,"
+	# inactive domains involved
+	# if x in active_domains:
+	# 	str_active_domains += "1,"
+	# else:
+	# 	str_active_domains += "0,"
+	# active domains only
+	str_active_domains += "1,"
 str_active_domains = str_active_domains[:-1]
 str_active_domains += "]"
 
@@ -282,21 +285,21 @@ str_vnf += "]"
 
 
 out = "n_vnfs = "+str(n_vnfs)+";\n"
-out += "start_domain = "+str(start_domain)+";\n"
-out += "target_domain = "+str(target_domain)+";\n"
 out += "M = "+str(M)+";\n"
-out += "acc_request = "+str(str_acc_range)+";\n"
-out += "dis_request = "+str(str_dis_range)+";\n"
-out += "src_request = "+str(str_src_range)+";\n"
-out += "end_request = "+str(str_end_range)+";\n"
 out += "request_bound = [0,0,0,0,0];\n"
 out += "n_domains = "+str(n_domains)+";\n"
 out += "domain_link_weights = "+str(str_domain_link_weights)+";\n"
-out += "service_request = [1,1,1,1,1];\n"
 out += "domain_activated = "+str_active_domains+";\n"
 out += "num_vnf_links = "+str(num_vnf_links)+";\n"
 out += "vnf_links = "+str_vnf_link+";\n"
 out += "vnfs = "+str_vnf+";\n"
+out += "acc_request = "+str(str_acc_range)+";\n"
+out += "dis_request = "+str(str_dis_range)+";\n"
+out += "src_request = "+str(str_src_range)+";\n"
+out += "end_request = "+str(str_end_range)+";\n"
+out += "start_domain = "+str(start_domain)+";\n"
+out += "target_domain = "+str(target_domain)+";\n"
+out += "service_request = [1,1,1,1,1];\n"
 
 with open(testFile, 'w+') as outfile:
 	outfile.write(out)

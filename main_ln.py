@@ -164,7 +164,7 @@ for x in xrange(0,20):
 
 	testIst = "data-exp/requests/request"+str(x)+".dzn"
 
-	cmd ="mzn2fzn -I mznlib fg-domain.mzn "+testMap+" "+testIst+" -o xxx.fzn"
+	cmd ="minizinc-2.1.2/bin/mzn2fzn -I mznlib fg-domain.mzn "+testMap+" "+testIst+" -o xxx.fzn"
 	print cmd
 	compileinfo = os.popen(cmd).read() 
 
@@ -178,7 +178,7 @@ for x in xrange(0,20):
 
 	if isSuccess:
 		
-		cmd = "./fzn_chuffed.dms xxx.fzn"
+		cmd = "./fzn_chuffed xxx.fzn"
 		print cmd
 		rlt = os.popen(cmd).read()
 		
@@ -191,7 +191,7 @@ for x in xrange(0,20):
 			relevant_str =  getDomainLinkSel(rlt)
 			outfilename = generateOutFile(relevant_str,testlog)
 
-			cmd = "mzn2fzn -I mznlib fg-vnf.mzn "+outfilename+" "+testIst+" -o yyy.fzn"
+			cmd = "minizinc-2.1.2/bin/mzn2fzn -I mznlib fg-vnf.mzn "+outfilename+" "+testIst+" -o yyy.fzn"
 			print cmd
 			compileinfo = os.popen(cmd).read() 
 
@@ -202,7 +202,7 @@ for x in xrange(0,20):
 			
 
 			if isSuccess:
-				cmd = "./fzn_chuffed.dms yyy.fzn"
+				cmd = "./fzn_chuffed yyy.fzn"
 				print cmd
 				rlt = os.popen(cmd).read() # This will run the command and return any output
 				
