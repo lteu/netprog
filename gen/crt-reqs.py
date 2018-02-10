@@ -1,10 +1,8 @@
+# this file generates 'n' simulated requests
+
 import glob
 import sys
 from random import randint,sample
-testFile = "test.dzn"
-
-
-
 
 def genReq(n_domains):
 
@@ -122,15 +120,11 @@ def genReq(n_domains):
 	return out
 
 
-n_domains = 10
+n_domains = 8
 
 for x in xrange(1,20):
-	outfilepath = "../data-exp/request"+str(x)+".dzn"
+	outfilepath = "../data-exp/requests/request"+str(x)+".dzn"
 	outstr = genReq(n_domains)
 	with open(outfilepath, 'w+') as outfile:
 		outfile.write(outstr)
 
-
-
-# with open(testFile, 'w+') as outfile:
-# 	outfile.write(out)

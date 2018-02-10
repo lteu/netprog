@@ -61,7 +61,7 @@ predicate accumulative_constraint(var int: service_id) =
 ;
 
 predicate distributive_constraint(var int: service_id) =
-  dis_request[service_id,1] > 0 /\ request_bound[service_id] == 0 ->
+  dis_request[service_id,1] > 0  ->
   forall(i in 1..n_domains)(
       selected_domain[i] == 0
       \/
@@ -72,6 +72,19 @@ predicate distributive_constraint(var int: service_id) =
       )
   )
 ;
+
+% predicate distributive_constraint(var int: service_id) =
+%   dis_request[service_id,1] > 0 /\ request_bound[service_id] == 0 ->
+%   forall(i in 1..n_domains)(
+%       selected_domain[i] == 0
+%       \/
+%       (
+%         selected_domain[i] == 1
+%         /\
+%         count_serivce[service_id,i] >= dis_request[service_id,1]
+%       )
+%   )
+% ;
 
 % -------------------------------------------------
 %       Core - Graph Shortest Path Problem
