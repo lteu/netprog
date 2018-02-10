@@ -7,7 +7,7 @@ SOLVE
 
 e.g.
 
-1) ``` mzn2fzn -I mznlib model/fg-domain.mzn data/test292.dzn -o xxx.fzn ```
+1) ``` mzn2fzn -I mznlib model/fg-domain.mzn data/test.dzn -o xxx.fzn ```
 2) ``` ./fzn_chuffed.dms xxx.fzn ```
 
 3) copy test.dzn to test-dom.dzn
@@ -34,5 +34,5 @@ Issue
 ===
 In case 'mzn2fzn not found', please do:
 
-1) ``` append "PATH=$HOME/mzn_bin_path" to ~/.bashrc ```
+1) ``` echo "PATH=$HOME/[mzn_bin_path]" >> ~/.bashrc ```
 2) ``` source ~/.bashrc ```
