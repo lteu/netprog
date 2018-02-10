@@ -29,7 +29,7 @@ netprog$: python main.py
 ```
 
 ## More
-check [cmd.txt](https://github.com/lteu/netprog/blob/master/cmd.txt) for basic usage and graphic visualization 
+check [cmd.md](https://github.com/lteu/netprog/blob/master/cmd.md) for basic usage and graphic visualization 
 
 ## Tech References
 
