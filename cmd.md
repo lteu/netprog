@@ -1,9 +1,4 @@
-command to launch the script
-
-
-
-SOLVE
-===
+## SOLVE
 
 e.g.
 
@@ -19,19 +14,17 @@ to test-dom.dzn
 6) ``` ./fzn_chuffed.dms xxx.fzn ```
 
 
-DRAW
-===
+## DRAW
 
-copy 
+copy the following to 'rlt.txt' separate items by ';'
 1) result "link_selection = = array1d(1..796, [0, 0 ..."
 2) "vnf_links = [|1..."
 3) "vnfs = [|1,0, ..."
-to the file rlt.txt, use ';' to separate items
 
 run ``` python draw_frag_network.py ```
 
-Issue
-===
+## Issue
+
 In case 'mzn2fzn not found', please do:
 
 1) ``` echo "PATH=$HOME/[mzn_bin_path]" >> ~/.bashrc ```
