@@ -1,23 +1,26 @@
 command to launch the script
 
 
-######
+
 SOLVE
+===
 
 e.g.
 
-1) mzn2fzn -I mznlib model/fg-domain.mzn data/test292.dzn -o xxx.fzn
-2) ./fzn_chuffed.dms xxx.fzn
+1) ``` mzn2fzn -I mznlib model/fg-domain.mzn data/test292.dzn -o xxx.fzn ```
+2) ``` ./fzn_chuffed.dms xxx.fzn ```
 
 3) copy test.dzn to test-dom.dzn
 4) append result 'domain_link_selection = array2d(1..15, 1..15, [1, 0 ...'
 to test-dom.dzn
 
-5) mzn2fzn -I mznlib model/fg-vnf.mzn data/test-dom.dzn -o xxx.fzn
-6) ./fzn_chuffed.dms xxx.fzn
+5) ``` mzn2fzn -I mznlib model/fg-vnf.mzn data/test-dom.dzn -o xxx.fzn ```
 
-######
+6) ``` ./fzn_chuffed.dms xxx.fzn ```
+
+
 DRAW
+===
 
 copy 
 1) result "link_selection = = array1d(1..796, [0, 0 ..."
@@ -25,11 +28,11 @@ copy
 3) "vnfs = [|1,0, ..."
 to the file rlt.txt, use ';' to separate items
 
-run 
-python draw_frag_network.py
+run ``` python draw_frag_network.py ```
 
-######
-configure command mzn2fzn.
+Issue
+===
+In case 'mzn2fzn not found', please do:
 
-append "PATH=$HOME/mzn_bin_path" to ~/.bashrc
-source ~/.bashrc
+1) ``` append "PATH=$HOME/mzn_bin_path" to ~/.bashrc ```
+2) ``` source ~/.bashrc ```
