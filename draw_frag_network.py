@@ -63,7 +63,8 @@ color =	{
         '1': "yellow",
         '3': "green",
         '4': "pink",
-        '5': "purple"
+        '5': "purple",
+        '0': "orange",
 }
 # color_set = ["red","grey","orange","yellow","green","blue","pink","purple"]
 color_set = ["red","grey","orange","green","blue","pink","purple"]

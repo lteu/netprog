@@ -14,29 +14,28 @@ def createVNFs():
 			idx = len(vnfs) + 1
 			vnfs.append([idx,0, 0, 0, 0, 0, 1, i])
 
-		# append GATEWAY node
+		# append border node
 		idx = len(vnfs) + 1
-		vnfs.append([idx,GATEWAY, 0, 0, 0, 0, 1, i])
+		vnfs.append([idx,BORDER, 0, 0, 0, 0, 1, i])
 		vnfs.append([idx+1,ENDPOINT, 0, 0, 0, 0, 1, i])
 	return vnfs
 
-def initVNFs(vnf_ids):
-	vnfs = []
-	for idx in vnf_ids:
-		vnfs.append([idx+1,0, 0, 0, 0, 0, 1, 0])
-	return vnfs
+def createDomainInfo():
+	# init active domains
+	active_domains =  random.sample(range(n_domains), n_domains/2)
+	active_domains.append(start_domain-1)
+	active_domains.append(target_domain-1)
 
-def createDomainInfo(M):
 	# init domain costs
 	domain_costs = [[0 for x in range(n_domains)] for y in range(n_domains)] 
 
 	for x in range(n_domains):
 		for y in range(n_domains):
 			if x < y:
-				tmpcost = random.randint(1, M)
+				tmpcost = random.randint(2, 8)
 				domain_costs[x][y] = tmpcost
 				domain_costs[y][x] = tmpcost
-	return domain_costs
+	return active_domains,domain_costs
 
 def createVNFproperties():
 
@@ -71,23 +70,23 @@ def createVNFproperties():
 			vnfs[x][VNF_KEY_MIRRORED] = 0
 	return vnfs
 
-def createVNFLinks(vnfs,VNF_KEY_TYPE,GATEWAY,VNF_KEY_DOMAIN,WANA,SHAPER,DPI):
+def createVNFLinks(vnfs,VNF_KEY_TYPE,BORDER,VNF_KEY_DOMAIN,WANA,SHAPER,DPI):
 		
 	# vnf link creation 1: same domain 
 	# ----------------------------
 	vnf_links = []
-	for i in [idx for idx, vnf in enumerate(vnfs) if vnf[VNF_KEY_TYPE] == GATEWAY]:
-		for j in [idx for idx, vnf in enumerate(vnfs) if vnf[VNF_KEY_TYPE] != GATEWAY and  vnf[VNF_KEY_DOMAIN] == vnfs[i][VNF_KEY_DOMAIN] ]:
+	for i in [idx for idx, vnf in enumerate(vnfs) if vnf[VNF_KEY_TYPE] == BORDER]:
+		for j in [idx for idx, vnf in enumerate(vnfs) if vnf[VNF_KEY_TYPE] != BORDER and  vnf[VNF_KEY_DOMAIN] == vnfs[i][VNF_KEY_DOMAIN] ]:
 			vnf_links.append([vnfs[i][0],vnfs[j][0]])
 			vnf_links.append([vnfs[j][0],vnfs[i][0]])
 
 
-	# vnf link creation 2: gatway GATEWAYs vnfs
+	# vnf link creation 2: gatway borders vnfs
 	# ----------------------------
 
 	for i in range(n_vnfs):
 		for j in range(n_vnfs):
-			if i != j and vnfs[i][VNF_KEY_DOMAIN] != vnfs[j][VNF_KEY_DOMAIN] and vnfs[i][VNF_KEY_TYPE] == GATEWAY and vnfs[j][VNF_KEY_TYPE] == GATEWAY :
+			if i != j and vnfs[i][VNF_KEY_DOMAIN] != vnfs[j][VNF_KEY_DOMAIN] and vnfs[i][VNF_KEY_TYPE] == BORDER and vnfs[j][VNF_KEY_TYPE] == BORDER :
 				vnf_links.append([vnfs[i][0],vnfs[j][0]])
 
 	return vnf_links
@@ -97,10 +96,6 @@ def createVNFLinks(vnfs,VNF_KEY_TYPE,GATEWAY,VNF_KEY_DOMAIN,WANA,SHAPER,DPI):
 # ==============================================
 # 	M A I N
 # ==============================================
-
-
-# 	Configuration Parameters
-# ===========================
 
 testFile = "../data-exp/test.dzn"
 
@@ -115,7 +110,7 @@ VNF_KEY_ACTIVE = 6
 VNF_KEY_DOMAIN = 7
 
 # VNF type IDs
-GATEWAY = 9;
+BORDER = 9;
 ENDPOINT = 10;
 WANA = 2;
 DPI = 1;
@@ -123,91 +118,137 @@ SHAPER = 3;
 VPN = 4;
 NAT = 5;
 
-type_list = [DPI,WANA,SHAPER,VPN,NAT]
-
-M = 20;   # max domain cost
-
-
+M = 15;   # max domain cost
 n_domains = 8;
-n_vnfs = 20;
 
 # vnf range in domain
-# lb_domain_vnfs = 5
-# up_domain_vnfs = 20
+lb_domain_vnfs = 5
+up_domain_vnfs = 20
 
-# vnfs = [];
+vnfs = [];
 
 endpoint_domains = random.sample(range(n_domains), 2)
 start_domain = endpoint_domains[0]
 target_domain = endpoint_domains[1]
 
-
-
-# 	Gen Procedure
-# ===========================
-
 # init vnfs
-vnf_ids = range(n_vnfs);
-domain_ids = range(1,n_domains+1);
-# print domain_ids
-vnfs = initVNFs(vnf_ids)
-
-# shuffle then k gateway and k endpoint
-random.shuffle(vnf_ids)
-# print vnf_ids
-
-# k gateway
-for d in range(n_domains):
-	tmpid = vnf_ids[0]
-	# print tmpid
-	vnfs[tmpid][VNF_KEY_TYPE] = GATEWAY
-	vnfs[tmpid][VNF_KEY_DOMAIN] = d+1
-	del vnf_ids[0]
-
-# k endpoint
-for d in range(n_domains):
-	tmpid = vnf_ids[0]
-	# print tmpid
-	vnfs[tmpid][VNF_KEY_TYPE] = ENDPOINT
-	vnfs[tmpid][VNF_KEY_DOMAIN] = d+1
-	del vnf_ids[0]
-
-# shuffle the rest
-random.shuffle(vnf_ids)
-
-for tmpid in vnf_ids:
-	aType = random.choice(type_list)
-	aDomain = random.choice(domain_ids)
-	vnfs[tmpid][VNF_KEY_TYPE] = aType
-	vnfs[tmpid][VNF_KEY_DOMAIN] = aDomain
-
-print vnfs
+vnfs = createVNFs()
+n_vnfs = len(vnfs)
 
 # init domains
-domain_costs = createDomainInfo(M)
+active_domains,domain_costs = createDomainInfo()
 
-print domain_costs
 
-# print "\nReport\n=========="
+# assign properties: WANAs, DPI, SHAPER 
+vnfs = createVNFproperties()
+
+print "\nReport\n=========="
 print "number of DPI", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == DPI)
 print "number of WANA", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA)
 print "number of SHAPER", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == SHAPER)
 print "number of VPN", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == VPN)
 print "number of NAT", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == NAT)
-# # print "WANA in start domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == start_domain), [vnf[0] for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == start_domain]
-# # print "WANA in target domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == target_domain), [vnf[0] for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == target_domain]
+# print "WANA in start domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == start_domain), [vnf[0] for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == start_domain]
+# print "WANA in target domain ", sum(1 for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == target_domain), [vnf[0] for vnf in vnfs if vnf[VNF_KEY_TYPE] == WANA and vnf[VNF_KEY_DOMAIN] == target_domain]
 
-# # create VNF links
-vnf_links = createVNFLinks(vnfs,VNF_KEY_TYPE,GATEWAY,VNF_KEY_DOMAIN,WANA,SHAPER,DPI)
+# create VNF links
+vnf_links = createVNFLinks(vnfs,VNF_KEY_TYPE,BORDER,VNF_KEY_DOMAIN,WANA,SHAPER,DPI)
 num_vnf_links = len(vnf_links)
 
-# print num_vnf_links
+# Requests Generation
+# -----------
+total_dpi = len([vnf for vnf in vnfs if vnf[VNF_KEY_TYPE] == DPI])
+dpi_ub = random.randint(2, 2+total_dpi/2)
+
+acc_dpi = [1,dpi_ub]
+dis_dpi = [0,5]
+src_dpi = [0,2]
+end_dpi = [0,2]
+
+acc_wana = [2,n_domains]
+dis_wana = [1,1]
+src_wana = [0,2]
+end_wana = [0,2]
+
+acc_shaper = [1,n_domains]
+dis_shaper = [0,1]
+src_shaper = [0,2]
+end_shaper = [0,2]
+
+acc_nat = [1,n_domains]
+dis_nat = [0,1]
+src_nat = [0,2]
+end_nat = [0,2]
+
+acc_vpn = [1,n_domains]
+dis_vpn = [0,1]
+src_vpn = [0,2]
+end_vpn = [0,2]
+
+acc_service_range = [acc_dpi,acc_wana,acc_shaper,acc_vpn,acc_nat]
+dis_service_range = [dis_dpi,dis_wana,dis_shaper,dis_vpn,dis_nat]
+src_service_range = [src_dpi,src_wana,src_shaper,src_vpn,src_nat]
+end_service_range = [end_dpi,end_wana,end_shaper,end_vpn,end_nat]
+
+# =======================================
+# 			Stringification
+# =======================================
 
 
-# # =======================================
-# # 			Stringification
-# # =======================================
+# stringfy active domains
+# ----------------------------
+str_active_domains = "[";
+for x in xrange(0,n_domains):
+	# inactive domains involved
+	# if x in active_domains:
+	# 	str_active_domains += "1,"
+	# else:
+	# 	str_active_domains += "0,"
+	# active domains only
+	str_active_domains += "1,"
+str_active_domains = str_active_domains[:-1]
+str_active_domains += "]"
 
+
+# stringfy acc
+# ----------------------------
+str_acc_range = "[|";
+for x in xrange(0,len(acc_service_range)):
+	for y in xrange(2):
+		str_acc_range += str(acc_service_range[x][y])+","
+	str_acc_range = str_acc_range[:-1]
+	str_acc_range += "|"
+str_acc_range += "]"
+
+# stringfy dis
+# ----------------------------
+str_dis_range = "[|";
+for x in xrange(0,len(dis_service_range)):
+	for y in xrange(2):
+		str_dis_range += str(dis_service_range[x][y])+","
+	str_dis_range = str_dis_range[:-1]
+	str_dis_range += "|"
+str_dis_range += "]"
+
+# stringfy src
+# ----------------------------
+str_src_range = "[|";
+for x in xrange(0,len(src_service_range)):
+	for y in xrange(2):
+		str_src_range += str(acc_service_range[x][y])+","
+	str_src_range = str_src_range[:-1]
+	str_src_range += "|"
+str_src_range += "]"
+
+# stringfy end
+# ----------------------------
+str_end_range = "[|";
+for x in xrange(0,len(end_service_range)):
+	for y in xrange(2):
+		str_end_range += str(acc_service_range[x][y])+","
+	str_end_range = str_end_range[:-1]
+	str_end_range += "|"
+str_end_range += "]"
 
 # stringfy domain link weights
 # ----------------------------
@@ -245,8 +286,10 @@ str_vnf += "]"
 
 out = "n_vnfs = "+str(n_vnfs)+";\n"
 out += "M = "+str(M)+";\n"
+out += "request_bound = [0,0,0,0,0];\n"
 out += "n_domains = "+str(n_domains)+";\n"
 out += "domain_link_weights = "+str(str_domain_link_weights)+";\n"
+out += "domain_activated = "+str_active_domains+";\n"
 out += "num_vnf_links = "+str(num_vnf_links)+";\n"
 out += "vnf_links = "+str_vnf_link+";\n"
 out += "vnfs = "+str_vnf+";\n"
