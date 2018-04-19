@@ -48,6 +48,11 @@ with open(testFile, 'r') as content_file:
     content = content_file.read()
 
 
+
+content = ''.join(content.split())
+# print content
+
+
 link_selection = []
 vnf_info = []
 vnf_links = []
@@ -72,9 +77,9 @@ pieces = content.strip().split(";")
 for piece in pieces:
 	if 'link_selection' in piece.lower():
 		link_selection,low,high = parseMZNResult(piece)
-	if 'vnf_links' in piece.lower():
+	if 'node_links' in piece.lower():
 		vnf_links = getVNFlinks(piece)
-	if 'vnfs' in piece.lower():
+	if 'nodes' in piece.lower():
 		vnf_info = getVNFinfo(piece)
 
 link_indexes = [idx for idx, val in enumerate(link_selection) if val != 0] # list index and value with filters

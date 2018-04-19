@@ -31,6 +31,15 @@ netprog$: python main.py
 ## More
 check [cmd.md](https://github.com/lteu/netprog/blob/master/cmd.md) for basic usage and graphic visualization 
 
+
+Tongs-Air:netprog hear7st$ mzn2fzn model/unique.mzn data-exp/d16n200/map3.dzn data-exp/d16n200/req/request5.dzn -o xxx.fzn
+Tongs-Air:netprog hear7st$ ./fzn_chuffed.dms xxx.fzn
+Assertion failed: (false), function addClause, file core/sat.c, line 165.
+Abort trap: 6
+Tongs-Air:netprog hear7st$
+
+
+
 ## Tech References
 
 

@@ -1,264 +1,217 @@
 % 
-% Based on domains connection, this script finalizes a concrete VNF function chain.
+% Addressing Intent with Service Function Chain 
 %
 % Contact: t.liu@unibo.it 
 %
 
-
 include "in_params.mzn"; 
 
-array[1..n_domains] of var 0..1: selected_domain;                     % effective domains re-computed from domain_link_selection
-array[1..n_services,1..n_domains] of var 0..n_vnfs: count_serivce;    % number of services in domains
-array[1..num_vnf_links] of var 0..1: link_selection;                  % resulting VNF connection links
+int: vnflist_size; 
+int: n_vnf_arcs = vnflist_size - 1;
 
-array[1..n_domains,1..n_domains] of var 0..1: domain_cover; 
-
-int: len_vnflist;
-array[1..len_vnflist] of 1..10: vnflist; % 10 is the number of types
-array[1..len_vnflist-1, 1..2] of 0..len_vnflist: intent_arcs;
-
-array[1..len_vnflist] of var 1..n_vnfs: intent_match;
-
+array[1..vnflist_size] of 1..10: vnflist; % 10 is the number of types
+array[1..n_vnf_arcs, 1..2] of 0..vnflist_size: vnf_arcs; % arcs extracted from vnflist considering dupList
+array[1..vnflist_size] of var 1..n_nodes: vnf_match; % ground nodes for vnflist 
+array[1..n_domains,1..n_domains] of var 0..1: domain_path; % domain_path[i,j]=1 means domain i is reachable from j (exists a path from j to i)
+array[1..n_domains] of var 0..1: selected_domain;  % domains traversed by SFC
+array[1..n_nodes] of var 0..1: selected_nodes; % all nodes belong to SFC
+array[1..num_node_links] of var 0..1: link_selection; % resulting SFC
+var int: n_fun_nodes; % number of functional nodes in SFC (excepting GATEWAY nodes)
 var int: total_cost;
 
 
-% ===== domain cover constraint =====
-% constraint 
-%   forall(i in 1..n_domains where i != start_domain)(
-%     domain_cover[start_domain,i] = 0
-%   )/\
-%   domain_cover[start_domain,start_domain] = 1;
-
-constraint forall(i,j in 1..n_domains where i == j)(
-
-      domain_cover[i,j] = 1
-);
-
-
+% objective function
+% -- 
 constraint 
-  forall(i,j in 1..n_domains where i !=j)(
-    (
-      if(
-        exists(s in 1..num_vnf_links where 
-          vnfs[vnf_links[s,1], VNF_TYPE]=GATEWAY 
-          /\
-          vnfs[vnf_links[s,2], VNF_TYPE]=GATEWAY
-          /\
-          vnfs[vnf_links[s,2], VNF_DOMAIN_KEY]=i
-          /\
-          vnfs[vnf_links[s,1], VNF_DOMAIN_KEY]=j)
-          (link_selection[s] = 1)
-        \/
-        exists(s in 1..num_vnf_links where 
-          vnfs[vnf_links[s,1], VNF_TYPE]=GATEWAY 
-          /\
-          vnfs[vnf_links[s,2], VNF_TYPE]=GATEWAY
-          /\
-          vnfs[vnf_links[s,2], VNF_DOMAIN_KEY]=i
-          /\
-          vnfs[vnf_links[s,1], VNF_DOMAIN_KEY]!=j)
-          (link_selection[s] = 1 /\ domain_cover[vnfs[vnf_links[s,1], VNF_DOMAIN_KEY],j] = 1)
-      )
-      then
-      domain_cover[i,j] = 1
-      else
-      domain_cover[i,j] = 0
-      endif
+  total_cost = sum(i in 1..num_node_links 
+  where nodes[node_links[i,1], VNF_TYPE] = GATEWAY /\ nodes[node_links[i,2], VNF_TYPE] = GATEWAY ) 
+  (domain_link_weights[nodes[node_links[i,1], VNF_DOMAIN_KEY], nodes[node_links[i,2],VNF_DOMAIN_KEY] ]*link_selection[i] );
 
+% % -------------------------------------------------
+% %      SFC Model
+% % -------------------------------------------------
+
+% % domain path constraints:
+% % -------------------------------------------------
+% % domain has a path to itself
+constraint 
+  forall(i,j in 1..n_domains where i == j)(
+      domain_path[i,j] = 1
+  );
+
+% propagate domain path 
+constraint 
+  forall(i,j in 1..n_domains where i <j)(
+    if(
+      exists(s in 1..num_node_links where 
+        nodes[node_links[s,1], VNF_TYPE]=GATEWAY 
+        /\
+        nodes[node_links[s,2], VNF_TYPE]=GATEWAY
+        /\
+        nodes[node_links[s,2], VNF_DOMAIN_KEY]=i
+        /\
+        nodes[node_links[s,1], VNF_DOMAIN_KEY]=j)
+        (link_selection[s] = 1)
+      \/
+      exists(s in 1..num_node_links where 
+        nodes[node_links[s,1], VNF_TYPE]=GATEWAY 
+        /\
+        nodes[node_links[s,2], VNF_TYPE]=GATEWAY
+        /\
+        nodes[node_links[s,2], VNF_DOMAIN_KEY]=i
+        /\
+        nodes[node_links[s,1], VNF_DOMAIN_KEY]!=j)
+        (link_selection[s] = 1 /\ domain_path[nodes[node_links[s,1], VNF_DOMAIN_KEY],j] = 1)
     )
+    then
+      domain_path[i,j] = 1
+    else
+      domain_path[i,j] = 0
+    endif
   );
 
-% =====
-
-% first element in intent match
-constraint forall(i in 1..n_vnfs 
-    where vnfs[i, VNF_DOMAIN_KEY] = start_domain 
-    /\ vnfs[i, VNF_TYPE] = ENDPOINT) (
-    intent_match[1] = i
-  );
-
+% vnflist match constraint: 
+% -------------------------------------------------
+% first element in vnf_match (start ENDPOINT)
 constraint 
-  forall(i in 1..len_vnflist)(
-      vnfs[intent_match[i],VNF_TYPE] == vnflist[i]
+  forall(i in 1..n_nodes where 
+    nodes[i, VNF_DOMAIN_KEY] = start_domain 
+    /\ 
+    nodes[i, VNF_TYPE] = ENDPOINT)(
+    vnf_match[1] = i
+  );
+% final element in vnf_match (target ENDPOINT)
+constraint 
+  forall(i in 1..n_nodes where 
+    nodes[i, VNF_DOMAIN_KEY] = target_domain 
+    /\ 
+    nodes[i, VNF_TYPE] = ENDPOINT)(
+    vnf_match[vnflist_size] = i
   );
 
+% % node type in vnf_match observes vnflist
 constraint 
-  forall(i in 2..len_vnflist)(
-     exists (j in 1..num_vnf_links)(
+  forall(i in 2..vnflist_size)(
+      nodes[vnf_match[i],VNF_TYPE] == vnflist[i]
+  );
+
+% % bound vnf_match to selected nodes (arcs)
+constraint 
+  forall(i in 2..vnflist_size)(
+     exists (j in 1..num_node_links)(
             link_selection[j] = 1
             /\
-            vnf_links[j,2] = intent_match[i]
+            node_links[j,2] = vnf_match[i]
       )
   );
 
-constraint link_selection[13] = 1;
-constraint link_selection[14] = 1;
-constraint link_selection[15] = 1;
-constraint link_selection[16] = 1;
-constraint link_selection[17] = 1;
-constraint link_selection[18] = 1;
-
-
-
-% constraint 
-%   forall(i in 1..len_vnflist-1)(
-%     ensure_path(intent_match[intent_arcs[i,1]],intent_match[intent_arcs[i,2]])
-%   );
-
-% constraint 
-%   ensure_path(4,8);
-
-
-% modo ricorsivo non funziona: segment fault !
-% predicate ensure_path(var int: start,var int: target) = 
-%   exists(k in 1..n_vnfs where vnfs[k,VNF_TYPE] == GATEWAY) (
-%          (exists(i,j in 1..num_vnf_links where 
-%            vnf_links[i,1] = start 
-%           /\ vnf_links[i,2] = k
-%           /\ vnf_links[j,1] = k
-%           /\ vnf_links[j,2] = target)(link_selection[i] = 1 /\ link_selection[j] = 1))
-%          % \/
-%          % (forall(i in 1..num_vnf_links where 
-%          %   vnf_links[i,1] = start 
-%          %  /\ vnf_links[i,2] = k)(
-%          %    link_selection[i] = 1
-%          %   )
-%          %  /\
-%          %  ensure_path(k,target)
-%          % )
-%   )
-%   \/
-%   exists(k in 1..n_vnfs where vnfs[k,VNF_TYPE] == GATEWAY) (
-%          ensure_path(k,target)
-%   )
-% ;
-
-% predicate ensure_path(var int: start,var int: target) = 
-%   forall(i in 1..n_vnfs) (
-%          sum(k in 1..num_vnf_links where vnf_links[k,2] = i) (link_selection[k]) + (if i = start then 1 else 0 endif)
-%     = 
-%          sum(k in 1..num_vnf_links where vnf_links[k,1] = i) (link_selection[k]) + (if i = target then 1 else 0 endif)
-%   )
-% ;
-
-
-% objective function
+% % bound vnf_match to domain_path
 constraint 
-  total_cost = sum(i in 1..num_vnf_links 
-  where vnfs[vnf_links[i,1], VNF_TYPE] = GATEWAY /\ vnfs[vnf_links[i,2], VNF_TYPE] = GATEWAY ) 
-  ( domain_link_weights[ vnfs[vnf_links[i,1], VNF_DOMAIN_KEY], vnfs[vnf_links[i,2],VNF_DOMAIN_KEY] ]* link_selection[i] );
-
-
-% -------------------------------------------------
-%      SFC Model
-% -------------------------------------------------
-
-
-% I will use proximity to source and target to replace it!
-% todo:
-%   numb(S,V,D)
-% -------------------------------------------------
-constraint 
-  forall(k in 1..n_services)(
-    forall(i in 1..n_domains) (
-      count_serivce[k,i] = 
-      sum(j in 1..num_vnf_links 
-        where 
-        (vnfs[vnf_links[j,2], VNF_DOMAIN_KEY] == i 
-        /\ vnfs[vnf_links[j,2], VNF_TYPE] == k)
-        \/ 
-        (vnfs[vnf_links[j,1], VNF_DOMAIN_KEY] == i 
-        /\ vnfs[vnf_links[j,1], VNF_TYPE] == k)
-        ) 
-        (link_selection[j])
-    )
+  forall(i in 1..n_vnf_arcs)(
+    domain_path[nodes[vnf_match[vnf_arcs[i,2]], VNF_DOMAIN_KEY],nodes[vnf_match[vnf_arcs[i,1]], VNF_DOMAIN_KEY]] = 1
   );
 
-% a node has incoming arc means node domain is selected
+
+% %   proximity constraints
+% % -------------------------------------------------
+constraint 
+  forall(i in 1..vnflist_size)(
+    proximity_to_source[i] = 1 -> nodes[vnf_match[i],VNF_DOMAIN_KEY] = start_domain 
+    /\
+    proximity_to_destination[i] = 1 -> nodes[vnf_match[i],VNF_DOMAIN_KEY] = target_domain
+  );
+  
+
+% % channel constraints: 
+% % -------------------------------------------------
+% % node with incoming arc means node domain is selected
 constraint 
   forall(i in 1..n_domains) (
-    if exists (j in 1..num_vnf_links where
-      vnfs[vnf_links[j,2], VNF_DOMAIN_KEY]  == i
+    if exists (j in 1..num_node_links where
+      nodes[node_links[j,2], VNF_DOMAIN_KEY]  == i
     ) (link_selection[j] = 1) then
       selected_domain[i] == 1
     else 
       selected_domain[i] == 0
     endif
-  );% includes both start and target D because endpoint connects to gateway%
+  );% includes both start and target D because ENDPOINT connects to gateway%
 
 
-% ENDPOINT constraint: 
-% -------------------------------------------------
-% ENDPOINT arcs must be selected in start target domains
+% % node with incoming arc means node is selected
 constraint 
-  forall(i in 1..num_vnf_links where 
-    (vnfs[vnf_links[i,2], VNF_TYPE]  == GATEWAY /\ vnfs[vnf_links[i,1], VNF_TYPE]  == ENDPOINT /\ vnfs[vnf_links[i,1], VNF_DOMAIN_KEY]  == start_domain)
+  forall(i in 1..n_nodes where nodes[i,VNF_TYPE] != ENDPOINT)(
+    if exists (j in 1..num_node_links where
+       node_links[j,2] == i \/ node_links[j,1] == i
+    ) (link_selection[j] = 1) then
+      selected_nodes[i] == 1
+    else 
+      selected_nodes[i] == 0
+    endif
+  );
+
+% % get number of fun nodes by filtering selected_nodes
+constraint 
+    n_fun_nodes = sum(i in 1..n_nodes where 
+    nodes[i,VNF_TYPE] != GATEWAY)(
+    selected_nodes[i]
+    );
+
+% % tightly bound the number of selected fun node to vnflist, 
+% constraint n_fun_nodes = vnflist_size;
+
+% % ENDPOINT constraint: 
+% % -------------------------------------------------
+% % ENDPOINT arcs must be selected in start and target domains
+constraint 
+  forall(i in 1..num_node_links where 
+    (nodes[node_links[i,2], VNF_TYPE]  == GATEWAY /\ nodes[node_links[i,1], VNF_TYPE]  == ENDPOINT /\ nodes[node_links[i,1], VNF_DOMAIN_KEY]  == start_domain)
     \/
-    (vnfs[vnf_links[i,1], VNF_TYPE]  == GATEWAY /\ vnfs[vnf_links[i,2], VNF_TYPE]  == ENDPOINT /\ vnfs[vnf_links[i,2], VNF_DOMAIN_KEY]  == target_domain)
+    (nodes[node_links[i,1], VNF_TYPE]  == GATEWAY /\ nodes[node_links[i,2], VNF_TYPE]  == ENDPOINT /\ nodes[node_links[i,2], VNF_DOMAIN_KEY]  == target_domain)
   )(
       link_selection[i] = 1
   );
 
-% no arcs to ENDPOINT if they are not start target domains
+% % no arcs to ENDPOINT if they are not start target domains
 constraint 
-  forall(i in 1..num_vnf_links where 
-    (vnfs[vnf_links[i,1], VNF_TYPE]  == ENDPOINT /\ vnfs[vnf_links[i,1], VNF_DOMAIN_KEY]  != start_domain)
+  forall(i in 1..num_node_links where 
+    (nodes[node_links[i,1], VNF_TYPE]  == ENDPOINT /\ nodes[node_links[i,1], VNF_DOMAIN_KEY]  != start_domain)
     \/
-    (vnfs[vnf_links[i,2], VNF_TYPE]  == ENDPOINT /\ vnfs[vnf_links[i,2], VNF_DOMAIN_KEY]  != target_domain)
+    (nodes[node_links[i,2], VNF_TYPE]  == ENDPOINT /\ nodes[node_links[i,2], VNF_DOMAIN_KEY]  != target_domain)
   )(
       link_selection[i] = 0
   );
 
-
-% test if a vnf is relevant vnf
-% todo: can be deleted after adding number constraint
-test if_relevent_vnf(1..n_vnfs: aVNF) =
-  if (vnfs[aVNF,VNF_TYPE] > 0 /\ vnfs[aVNF,VNF_TYPE] < 6 /\ service_request[vnfs[aVNF,VNF_TYPE]] == 1 )
-     % general service
-     \/ 
-     vnfs[aVNF,VNF_TYPE] > 8 
-     % endpoint, gateway 
-  then
-    true
-  else 
-    false
-  endif;
-
-
-
-% ---------------------
-%   service constraints
-% -------------------------------------------------
-
-% constraint 
-%   forall(i in 1..n_services) (
-%     count_serivce[i,start_domain] >= src_request[i,1]
-%     /\ 
-%     count_serivce[i,start_domain] <= src_request[i,2]
-%     /\ 
-%     count_serivce[i,target_domain] <= end_request[i,2]
-%     /\ 
-%     count_serivce[i,target_domain] >= end_request[i,1]
-%   );
+% ENDPOINT in start and target domains are selected, others no
+constraint 
+  forall(i in 1..n_nodes where nodes[i,VNF_TYPE] == ENDPOINT)(
+    if nodes[i,VNF_DOMAIN_KEY] = start_domain 
+       \/ 
+       nodes[i,VNF_DOMAIN_KEY] = target_domain  
+    then
+      selected_nodes[i] == 1
+    else 
+      selected_nodes[i] == 0
+    endif
+  );
 
 
 % -------------------------------------------------
-%       Graph Core 
+%      Core Graph
 % -------------------------------------------------
 
 
 % no loop between neighbor domains
 constraint
-  forall(i,j in 1..num_vnf_links where 
+  forall(i,j in 1..num_node_links where 
     i < j 
     /\
-    vnfs[vnf_links[i,1], VNF_TYPE]  == GATEWAY
+    nodes[node_links[i,1], VNF_TYPE]  == GATEWAY
     /\
-    vnfs[vnf_links[i,2], VNF_TYPE]  == GATEWAY
+    nodes[node_links[i,2], VNF_TYPE]  == GATEWAY
     /\
-    vnf_links[i,1] == vnf_links[j,2] 
+    node_links[i,1] == node_links[j,2] 
     /\ 
-    vnf_links[i,2] == vnf_links[j,1]
+    node_links[i,2] == node_links[j,1]
   ) 
   (
     not (link_selection[i] = 1 /\ link_selection[j] = 1)
@@ -266,12 +219,12 @@ constraint
 
 % start domain has no incoming arc from other domain
 constraint
-  forall(i in 1..num_vnf_links where
-    vnfs[vnf_links[i,2], VNF_TYPE]  == GATEWAY
+  forall(i in 1..num_node_links where
+    nodes[node_links[i,2], VNF_TYPE]  == GATEWAY
     /\
-    vnfs[vnf_links[i,1], VNF_TYPE]  == GATEWAY
+    nodes[node_links[i,1], VNF_TYPE]  == GATEWAY
     /\
-    vnfs[vnf_links[i,2], VNF_DOMAIN_KEY] = start_domain
+    nodes[node_links[i,2], VNF_DOMAIN_KEY] = start_domain
   ) 
   (
     link_selection[i] = 0
@@ -279,20 +232,22 @@ constraint
 
 
 % no domains allow 2 incoming arcs from different domains
-% todo: can be improved based on domains
+% todo: can be improved based on domains ?
 constraint 
-  not exists(i,j in 1..num_vnf_links where 
-      vnfs[vnf_links[i,2], VNF_TYPE]  == GATEWAY
+  not exists(i,j in 1..num_node_links where 
+      i < j
       /\
-      vnfs[vnf_links[i,1], VNF_TYPE]  == GATEWAY
+      nodes[node_links[i,2], VNF_TYPE]  == GATEWAY
       /\
-      vnfs[vnf_links[j,2], VNF_TYPE]  == GATEWAY
+      nodes[node_links[i,1], VNF_TYPE]  == GATEWAY
       /\
-      vnfs[vnf_links[j,1], VNF_TYPE]  == GATEWAY
+      nodes[node_links[j,2], VNF_TYPE]  == GATEWAY
       /\
-      vnfs[vnf_links[i,2], VNF_DOMAIN_KEY]  == vnfs[vnf_links[j,2], VNF_DOMAIN_KEY]
+      nodes[node_links[j,1], VNF_TYPE]  == GATEWAY
       /\
-      vnfs[vnf_links[i,1], VNF_DOMAIN_KEY]  != vnfs[vnf_links[j,1], VNF_DOMAIN_KEY]
+      nodes[node_links[i,2], VNF_DOMAIN_KEY]  == nodes[node_links[j,2], VNF_DOMAIN_KEY]
+      /\
+      nodes[node_links[i,1], VNF_DOMAIN_KEY]  != nodes[node_links[j,1], VNF_DOMAIN_KEY]
   ) 
   (
     link_selection[i] = 1 /\ link_selection[j] = 1
@@ -302,55 +257,36 @@ constraint
 constraint 
   forall(i in 1..n_domains where i != start_domain) (
     selected_domain[i] == 1 -> 
-    exists (j in 1..num_vnf_links)(
+    exists (j in 1..num_node_links)(
       link_selection[j] = 1
       /\
-      vnfs[vnf_links[j,2], VNF_DOMAIN_KEY]  == i
+      nodes[node_links[j,2], VNF_DOMAIN_KEY]  == i
       /\
-      vnfs[vnf_links[j,1], VNF_DOMAIN_KEY]  != i
+      nodes[node_links[j,1], VNF_DOMAIN_KEY]  != i
       /\
-      vnfs[vnf_links[j,2], VNF_TYPE]  == GATEWAY
+      nodes[node_links[j,2], VNF_TYPE]  == GATEWAY
       /\
-      vnfs[vnf_links[j,1], VNF_TYPE]  == GATEWAY
+      nodes[node_links[j,1], VNF_TYPE]  == GATEWAY
     ));
 
 % no outgoing arcs from unselected domains
 constraint 
-  forall(i in 1..num_vnf_links) (
-    selected_domain[vnfs[vnf_links[i,1],VNF_DOMAIN_KEY]] = 0 -> link_selection[i] = 0
+  forall(i in 1..num_node_links) (
+    selected_domain[nodes[node_links[i,1],VNF_DOMAIN_KEY]] = 0 -> link_selection[i] = 0
   );
 
-% only relevant VNFs are connectable in the same domain
-% todo: can be deleted after adding number constraint
-constraint 
-  forall(i in 1..num_vnf_links where vnfs[vnf_links[i,1],VNF_DOMAIN_KEY] ==  vnfs[vnf_links[i,2],VNF_DOMAIN_KEY]) (
-    if not if_relevent_vnf(vnf_links[i,2]) \/ not if_relevent_vnf(vnf_links[i,1])then
-      link_selection[i] = 0 
-    else
-      true
-    endif
-  );
-      
-% main
-% --------------------------
 
-% constraint
-%   service_distribution()
-% ;
 % solve satisfy;
 solve minimize total_cost;
+      
+% outputs
+% --------------------------
 
 output[show(link_selection),show(selected_domain)];
 output[
 "total_cost = ", show(total_cost), "\n"
 ];
-output[ show(count_serivce)];
-
-var int: serv3;
-% test scope
-constraint serv3 = sum(i in 1..n_domains)(
-    count_serivce[5,i]
-    );
-output[ show(serv3)];
-output[show(domain_cover)];
-output[show(intent_match)];
+output[show(domain_path)];
+output[show(vnf_match)];
+output[show(n_fun_nodes)];
+output[show(selected_nodes)];

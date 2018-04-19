@@ -27,33 +27,30 @@ int: SHAPER = 3;
 int: VPN = 4;
 int: NAT = 5;
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functional Parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-int: n_vnfs;      			% number of nodes in the matrix
+int: n_nodes;      			% number of nodes in the matrix
 int: start_domain;       	% start node
 int: target_domain;      	% end node
 int: M;           			% edge cost's upper bound
 int: n_domains;   			% num of domains
-int: num_vnf_links;			% num of vnf links
+int: num_node_links;			% num of vnf links
+int: n_domain_constraints;
 
+array[1..n_domain_constraints,1..4] of int: domain_constraints; 
 
-array[1..n_vnfs, 1..8] of int: vnfs; 								% vnf attributes
-array[1..num_vnf_links, 1..2] of 1..n_vnfs: vnf_links;   			% vnf links
+array[1..n_nodes, 1..8] of int: nodes; 								% vnf attributes
+array[1..num_node_links, 1..2] of 1..n_nodes: node_links;   			% vnf links
 
 array[1..n_domains, 1..n_domains] of 0..M: domain_link_weights;     % distance matrix
-array[1..n_domains] of 0..1: domain_activated;            			% domains where lie the start and target vnf
 
-array[1..n_services] of 0..1: service_request;                      % service parameters on/off
 
-array[1..n_services, 1..2] of 0..n_vnfs: acc_request; 				% accumulated VNF service   			
-array[1..n_services, 1..2] of 0..n_vnfs: dis_request; 				% distributed VNF service
-array[1..n_services, 1..2] of 0..n_vnfs: src_request; 				% VNF service in src domain  
-array[1..n_services, 1..2] of 0..n_vnfs: end_request; 				% VNF service in end domain 
-
-% can be removed, potentially
-array[1..n_services] of 0..1: request_bound;                        % service parameters, 0 general, 1 start & target
+array[1..vnflist_size] of 0..1: proximity_to_source; 				% VNF service in end domain 
+array[1..vnflist_size] of 0..1: proximity_to_destination; 				% VNF service in end domain 
 
 
