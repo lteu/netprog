@@ -8,20 +8,31 @@ while respecting VNF properties.
 
 ## Requirements
 - [MiniZinc](http://www.minizinc.org/software.html)
-- Efficient Solver, e.g. [Chuffed](https://github.com/geoffchu/chuffed)
+- Efficient Solver, e.g., [Chuffed](https://github.com/geoffchu/chuffed)
 
 N.B. the binary ./fzn_chuffed.dms is compatible only with Mac OS, please substitute it if needed, check [Chuffed](https://github.com/geoffchu/chuffed/tree/master/binary) for your suitable one.
 
 ## Instance Generation
 
-```
-netprog/gen$: python crt-map.py
+### Generate an example
 
-netprog/gen$: python crt-reqs.py
+```
+netprog/gen$: python crt_map.py
+
+netprog/gen$: python crt_reqs.py
 
 ```
 This will create VNF network topology and simulated requests respectively.
-The created files are located in netprog/data-exp/test.dzn, netprog/data-exp/requests/request1.dzn ... 
+The created files are located at netprog/data-exp/test.dzn, netprog/data-exp/requests/request1.dzn ... 
+
+
+### Automatically generate a testbed
+
+You can personalize main.py or main2.py, which use the previous two scripts, to generate sets of experiments.
+```
+netprog/gen$: python main.py
+```
+
 
 ## Run on test instances
 ```
@@ -30,14 +41,6 @@ netprog$: python main.py
 
 ## More
 check [cmd.md](https://github.com/lteu/netprog/blob/master/cmd.md) for basic usage and graphic visualization 
-
-
-Tongs-Air:netprog hear7st$ mzn2fzn model/unique.mzn data-exp/d16n200/map3.dzn data-exp/d16n200/req/request5.dzn -o xxx.fzn
-Tongs-Air:netprog hear7st$ ./fzn_chuffed.dms xxx.fzn
-Assertion failed: (false), function addClause, file core/sat.c, line 165.
-Abort trap: 6
-Tongs-Air:netprog hear7st$
-
 
 
 ## Tech References

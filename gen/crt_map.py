@@ -219,12 +219,20 @@ type_list = [DPI,WANA,SHAPER,VPN,NAT]
 M = 100;   # max domain cost
 
 
-#example
-# parts = os.path.abspath(__file__).split("/")
-# parts = parts[:-2]
-# filepath = '/'.join(parts)+"/data-exp/test.dzn"
-# # call_gen_map(filepath,n_domains,n_vnfs)
-# print filepath
+if __name__ == '__main__':
+	#example
+	n_domains = 10
+	n_vnfs = 400
+	parts = os.path.abspath(__file__).split("/")
+	parts = parts[:-2]
+	exp_folder = '/'.join(parts)+"/testbed/"
+	if not os.path.exists(exp_folder):
+		os.makedirs(exp_folder)
+	filepath = exp_folder+"example.dzn"
+
+
+	call_gen_map(filepath,n_domains,n_vnfs)
+	print filepath
 
 
 

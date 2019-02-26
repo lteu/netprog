@@ -2,6 +2,7 @@
 
 import glob
 import sys
+import os
 from random import randint,sample
 from intent_generator import loadRequests,requestToVar
 
@@ -84,15 +85,17 @@ def call_gen_reqs(n_domains,rep,path,n_dConstraints):
 		with open(outfilepath, 'w+') as outfile:
 			outfile.write(outstr)
 
+	return path
 
-# example 
-# path = "../data-exp/requests/request"
-# call_gen_reqs(8,20,path)
+if __name__ == '__main__':
+	# example 
+	path = "../testbed/requests/"
+	if not os.path.exists(path):
+		os.makedirs(path)
 
-# for x in xrange(1,21):
-# 	print x
-# 	outfilepath = "../data-exp/requests/request"+str(x)+".dzn"
-# 	outstr = genReq(n_domains)
-# 	with open(outfilepath, 'w+') as outfile:
-# 		outfile.write(outstr)
+	n_domains_constrs = 3
+	path = call_gen_reqs(8,20,path,n_domains_constrs)
+	print 'Done, simulated requests are generated at',path
+
+
 
