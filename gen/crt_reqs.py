@@ -87,9 +87,17 @@ def call_gen_reqs(n_domains,rep,path,n_dConstraints):
 
 	return path
 
+def getDirPath():
+	parts = os.path.abspath(__file__).split("/")
+	parts = parts[:-2]
+	expdir = '/'.join(parts)
+	return expdir
+
+
 if __name__ == '__main__':
 	# example 
-	path = "../testbed/requests/"
+	path = getDirPath() + "/testbed/requests/"
+	# path = "../testbed/requests/"
 	if not os.path.exists(path):
 		os.makedirs(path)
 

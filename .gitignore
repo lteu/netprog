@@ -1,4 +1,6 @@
 *.ozn
 *.fzn
 *.dzn
-*.txt
+.DS_Store
+.DS_Store?
+._*

@@ -6,20 +6,6 @@ import sys
 import random
 import os
 
-def createVNFs(n_domains):
-	for i in xrange(1,n_domains+1):
-		numVnf = random.randint(lb_domain_vnfs, up_domain_vnfs)
-
-		# append others
-		for j in xrange(1,numVnf+1):
-			idx = len(vnfs) + 1
-			vnfs.append([idx,0, 0, 0, 0, 0, 1, i])
-
-		# append GATEWAY node
-		idx = len(vnfs) + 1
-		vnfs.append([idx,GATEWAY, 0, 0, 0, 0, 1, i])
-		vnfs.append([idx+1,ENDPOINT, 0, 0, 0, 0, 1, i])
-	return vnfs
 
 def initVNFs(vnf_ids):
 	vnfs = []
@@ -39,38 +25,6 @@ def createDomainInfo(M,n_domains):
 				domain_costs[y][x] = tmpcost
 	return domain_costs
 
-def createVNFproperties():
-
-	# --- DPI
-	unassigned_vnf_ids = [tmp[0] for tmp in vnfs if tmp[VNF_KEY_TYPE] == 0]
-	dpi_vnf =  random.sample(unassigned_vnf_ids, len(unassigned_vnf_ids)/5)
-	for x in range(n_vnfs):
-		if vnfs[x][0] in dpi_vnf and vnfs[x][VNF_KEY_TYPE] == 0:
-			vnfs[x][VNF_KEY_TYPE] =  DPI
-			vnfs[x][VNF_KEY_TERMINATING] = 1
-			vnfs[x][VNF_KEY_PATHSENSITIVE] = 0
-			vnfs[x][VNF_KEY_MIRRORED] = 0
-
-	# --- WANA
-	unassigned_vnf_ids = [tmp[0] for tmp in vnfs if tmp[VNF_KEY_TYPE] == 0]
-	selected_vnf =  random.sample(unassigned_vnf_ids, len(unassigned_vnf_ids)/4)
-	for x in range(n_vnfs):
-		if vnfs[x][0] in selected_vnf and vnfs[x][VNF_KEY_TYPE] == 0:
-			vnfs[x][VNF_KEY_TYPE] = WANA if random.randint(0, 1) == 0 else VPN
-			vnfs[x][VNF_KEY_TERMINATING] = 0
-			vnfs[x][VNF_KEY_PATHSENSITIVE] = 0 # or not
-			vnfs[x][VNF_KEY_MIRRORED] = 1
-
-	# --- SHAPER
-	unassigned_vnf_ids = [tmp[0] for tmp in vnfs if tmp[VNF_KEY_TYPE] == 0]
-	selected_vnf =  random.sample(unassigned_vnf_ids, len(unassigned_vnf_ids)/3)
-	for x in range(n_vnfs):
-		if vnfs[x][0] in selected_vnf and vnfs[x][VNF_KEY_TYPE] == 0:
-			vnfs[x][VNF_KEY_TYPE] = SHAPER if random.randint(0, 1) == 0 else NAT
-			vnfs[x][VNF_KEY_TERMINATING] = 0
-			vnfs[x][VNF_KEY_PATHSENSITIVE] = 0 # or not
-			vnfs[x][VNF_KEY_MIRRORED] = 0
-	return vnfs
 
 def createVNFLinks(n_vnfs,vnfs,VNF_KEY_TYPE,GATEWAY,VNF_KEY_DOMAIN,WANA,SHAPER,DPI):
 		
@@ -232,6 +186,7 @@ if __name__ == '__main__':
 
 
 	call_gen_map(filepath,n_domains,n_vnfs)
+	print 'The following file has been created:'
 	print filepath
 
 

@@ -3,7 +3,7 @@
 import glob
 import sys
 from random import randint,sample
-
+import os
 
 def reqToNum(req,dic):
 	parts = req.split(",")
@@ -49,8 +49,12 @@ def generateProximity(req,pairList):
 				p_to_s[a] = 1
 	return p_to_s,p_to_d
 
+
 def loadRequests():
-	with open("vnflists.txt", 'r') as content_file:
+	parts = os.path.abspath(__file__).split("/")
+	parts = parts[:-1]
+	expdir = '/'.join(parts)
+	with open(expdir+"/vnflists.txt", 'r') as content_file:
 	    lines = content_file.readlines()
 	requests = []
 	for line in lines:
