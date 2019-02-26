@@ -13,7 +13,7 @@ from run.kit_run import checkMZNResult
 start = time.time()
 
 
-cmd = "mzn2fzn model/unique.mzn testbed/data-exp-n300-d30/d12n300/map4.dzn testbed/data-exp-n300-d30/d12n300/req2/request4.dzn -o xxx.fzn"
+cmd = "mzn2fzn model/unique.mzn example/data-exp-n780-d15/d15n60/map2.dzn example/data-exp-n780-d15/d15n60/req2/request6.dzn -o xxx.fzn"
 print cmd
 compileinfo = os.popen(cmd).read() 
 

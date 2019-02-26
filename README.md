@@ -34,10 +34,18 @@ netprog/gen$: python main.py
 ```
 
 
-## Run on test instances
+## Run
+
+### run the example
 ```
-netprog$: python main.py
+netprog$: python test.py
 ```
+
+### run experiments with instances in the testbed
+```
+netprog/run$: python chuffed.py
+```
+
 
 ## More
 check [cmd.md](https://github.com/lteu/netprog/blob/master/cmd.md) for basic usage and graphic visualization 
