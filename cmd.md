@@ -2,16 +2,8 @@
 
 e.g.
 
-1) ``` mzn2fzn -I mznlib model/fg-domain.mzn data/test.dzn -o xxx.fzn ```
+1) ``` mzn2fzn -I mznlib model/unique.mzn example/map2.dzn example/request6.dzn -o xxx.fzn ```
 2) ``` ./fzn_chuffed.dms xxx.fzn ```
-
-3) copy test.dzn to test-dom.dzn
-4) append result 'domain_link_selection = array2d(1..15, 1..15, [1, 0 ...'
-to test-dom.dzn
-
-5) ``` mzn2fzn -I mznlib model/fg-vnf.mzn data/test-dom.dzn -o xxx.fzn ```
-
-6) ``` ./fzn_chuffed.dms xxx.fzn ```
 
 
 ## DRAW
